@@ -8,8 +8,8 @@ export async function fetchShelf(): Promise<UserBook[]> {
   return res.json();
 }
 
-export async function searchBooks(query: string): Promise<GoogleBookResult[]> {
-  const res = await fetch(`/api/books/search?q=${encodeURIComponent(query)}`);
+export async function searchBooks(query: string, signal?: AbortSignal): Promise<GoogleBookResult[]> {
+  const res = await fetch(`/api/books/search?q=${encodeURIComponent(query)}`, { signal });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     throw new Error(body?.error || `No se pudo buscar en Google Books (HTTP ${res.status})`);

@@ -3,9 +3,10 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { prisma } from '../prismaClient.js';
+import { LOCAL_USER_ID } from '../bootstrap.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DEFAULT_USER_ID = 'local-user';
+const DEFAULT_USER_ID = LOCAL_USER_ID;
 
 const upload = multer({
   storage: multer.diskStorage({

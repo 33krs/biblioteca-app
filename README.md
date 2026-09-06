@@ -46,6 +46,22 @@ puedes conseguir una gratis en Google Cloud Console (habilitando "Books API")
 y ponerla en `GOOGLE_BOOKS_API_KEY` dentro de `apps/backend/.env` (o como
 variable de entorno del servicio `backend` en `docker-compose.yml`).
 
+## Tests
+
+- **Backend** (`apps/backend`): tests de integración con Vitest + Supertest
+  contra una base de datos real de prueba (`biblioteca_test`, se crea sola la
+  primera vez). Requiere que el contenedor `db` de `docker-compose.yml` esté
+  corriendo. La búsqueda de libros se testea con `fetch` mockeado, para no
+  depender de la disponibilidad/cuota de Google Books ni de Open Library.
+- **Frontend** (`apps/frontend`): tests de componentes y del store con Vitest
+  + Testing Library, mockeando la capa `lib/api.ts` (sin red real).
+
+```bash
+npm run test            # backend + frontend
+npm run test:backend
+npm run test:frontend
+```
+
 ## Próximos pasos (roadmap)
 
 1. **Autenticación real** (JWT o sesiones) para pasar a multiusuario — el

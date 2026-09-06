@@ -18,26 +18,31 @@ export default function AddBookModal({ onClose, onAdd }: Props) {
   const [author, setAuthor] = useState('');
 
   useEffect(() => {
-    if (!query.trim() || selected) {
+    if (query.trim().length < 3 || selected) {
       setResults([]);
       setSearchError(null);
       return;
     }
+    const controller = new AbortController();
     const timeout = setTimeout(async () => {
       setSearching(true);
       setSearchError(null);
       try {
-        const found = await searchBooks(query.trim());
+        const found = await searchBooks(query.trim(), controller.signal);
         setResults(found);
         if (found.length === 0) setSearchError('Sin resultados para esa búsqueda.');
       } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') return;
         setResults([]);
         setSearchError(e instanceof Error ? e.message : 'No se pudo buscar en Google Books.');
       } finally {
         setSearching(false);
       }
     }, 400);
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [query, selected]);
 
   function pickResult(r: GoogleBookResult) {
@@ -146,12 +151,14 @@ export default function AddBookModal({ onClose, onAdd }: Props) {
 
         <label className="font-sans text-xs block mb-1 text-muted">Título</label>
         <input
+          aria-label="Título"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="font-sans w-full px-3 py-2 rounded border text-sm mb-3 bg-ink text-paper border-border focus:outline-none"
         />
         <label className="font-sans text-xs block mb-1 text-muted">Autor</label>
         <input
+          aria-label="Autor"
           value={author}
           onChange={(e) => setAuthor(e.target.value)}
           className="font-sans w-full px-3 py-2 rounded border text-sm mb-4 bg-ink text-paper border-border focus:outline-none"
