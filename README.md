@@ -46,6 +46,18 @@ sin esa variable el backend no arranca. Si usas `docker compose up`, define
 `JWT_SECRET` en tu shell o en un `.env` junto a `docker-compose.yml` (sin
 key, `docker compose` se niega a levantar el servicio `backend`).
 
+### Seguridad
+
+- **Rate limiting** en `/api/auth/*` (`src/middleware/rateLimit.ts`): 10
+  intentos/15min en login, 5/hora en forgot-password, 30/15min en el resto,
+  todo por IP. Se desactiva en tests con `DISABLE_RATE_LIMIT=true`.
+- **Helmet** para headers HTTP estándar (CSP, `X-Frame-Options`, HSTS, etc.).
+- **CORS restringido**: solo acepta `FRONTEND_URL` y los orígenes conocidos
+  de desarrollo (`localhost:5173`, `localhost:8080`); en la práctica el
+  navegador siempre habla con el backend a través de un proxy same-origin
+  (Vite en dev, Nginx en `docker-compose`), así que esto es una capa extra,
+  no algo de lo que dependa el funcionamiento normal.
+
 ### Recuperación de contraseña
 
 - `POST /api/auth/forgot-password` — `{ email }` → genera un token de

@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { prisma } from '../prismaClient.js';
 import { requireAuth, signToken, type AuthedRequest } from '../middleware/auth.js';
 import { sendPasswordResetEmail } from '../lib/mailer.js';
+import { authLimiter, loginLimiter, forgotPasswordLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -22,7 +23,7 @@ function toPublicUser(user: { id: string; email: string; name: string | null }) 
 }
 
 // POST /api/auth/register - crea una cuenta y devuelve un token
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   const { email, password, name } = req.body;
 
   if (!isValidEmail(email)) {
@@ -50,7 +51,7 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login - valida credenciales y devuelve un token
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   if (typeof email !== 'string' || typeof password !== 'string') {
@@ -68,7 +69,7 @@ router.post('/login', async (req, res) => {
 // POST /api/auth/forgot-password - genera un token de reseteo y lo "envía"
 // por email. Siempre responde 200 con el mismo mensaje exista o no la cuenta,
 // para no revelar qué emails están registrados.
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
   const { email } = req.body;
   const genericResponse = { message: 'Si el email existe, te enviamos instrucciones para reestablecer la contraseña' };
 
@@ -97,7 +98,7 @@ router.post('/forgot-password', async (req, res) => {
 
 // POST /api/auth/reset-password - consume el token del email y define una
 // contraseña nueva.
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', authLimiter, async (req, res) => {
   const { token, password } = req.body;
 
   if (typeof token !== 'string' || !token) {
