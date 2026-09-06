@@ -10,6 +10,7 @@ interface AuthState {
   hydrate: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -48,6 +49,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     const { token, user } = await authApi.register(email, password, name);
     setToken(token);
     set({ user });
+  },
+
+  forgotPassword: async (email) => {
+    set({ error: null });
+    await authApi.forgotPassword(email);
   },
 
   logout: () => {

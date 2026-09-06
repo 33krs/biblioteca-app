@@ -17,6 +17,7 @@ function mockStore(overrides: Partial<ReturnType<typeof useAuthStore>>) {
     hydrate: vi.fn(),
     login: vi.fn(),
     register: vi.fn(),
+    forgotPassword: vi.fn(),
     logout: vi.fn(),
     ...overrides,
   });
@@ -61,5 +62,31 @@ describe('AuthScreen', () => {
     fireEvent.click(screen.getByText('Entrar'));
 
     expect(await screen.findByText('Email o contraseña incorrectos')).toBeTruthy();
+  });
+
+  it('cambia a "olvidé mi contraseña" y llama a forgotPassword con el email', async () => {
+    const forgotPassword = vi.fn().mockResolvedValue(undefined);
+    mockStore({ forgotPassword });
+
+    render(<AuthScreen />);
+    fireEvent.click(screen.getByText('¿Olvidaste tu contraseña?'));
+
+    expect(screen.queryByLabelText('Contraseña')).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@test.com' } });
+    fireEvent.click(screen.getByText('Enviar instrucciones'));
+
+    await waitFor(() => expect(forgotPassword).toHaveBeenCalledWith('a@test.com'));
+    expect(await screen.findByText(/Si el email existe/)).toBeTruthy();
+  });
+
+  it('vuelve al login desde "olvidé mi contraseña"', () => {
+    mockStore({});
+
+    render(<AuthScreen />);
+    fireEvent.click(screen.getByText('¿Olvidaste tu contraseña?'));
+    fireEvent.click(screen.getByText('Volver a iniciar sesión'));
+
+    expect(screen.getByLabelText('Contraseña')).toBeTruthy();
   });
 });

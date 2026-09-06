@@ -75,6 +75,17 @@ describe('register', () => {
   });
 });
 
+describe('forgotPassword', () => {
+  it('delega en la API sin tocar la sesión', async () => {
+    vi.mocked(authApi.forgotPassword).mockResolvedValue(undefined);
+
+    await useAuthStore.getState().forgotPassword('a@test.com');
+
+    expect(authApi.forgotPassword).toHaveBeenCalledWith('a@test.com');
+    expect(useAuthStore.getState().user).toBeNull();
+  });
+});
+
 describe('logout', () => {
   it('borra el token y el usuario', () => {
     localStorage.setItem('biblioteca.token', 'tok');

@@ -1,8 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
+import crypto from 'crypto';
 import { createApp } from '../src/app.js';
+import { prisma } from '../src/prismaClient.js';
+import * as mailer from '../src/lib/mailer.js';
 
 const app = createApp();
+
+beforeEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('POST /api/auth/register', () => {
   it('crea una cuenta y devuelve un token', async () => {
@@ -85,5 +92,84 @@ describe('GET /api/auth/me', () => {
   it('responde 401 con un token inválido', async () => {
     const res = await request(app).get('/api/auth/me').set('Authorization', 'Bearer no-es-un-token');
     expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /api/auth/forgot-password', () => {
+  it('genera un token de reseteo y "envía" el email si el usuario existe', async () => {
+    await request(app).post('/api/auth/register').send({ email: 'a@test.com', password: 'password123' });
+    const sendMock = vi.spyOn(mailer, 'sendPasswordResetEmail').mockResolvedValue();
+
+    const res = await request(app).post('/api/auth/forgot-password').send({ email: 'a@test.com' });
+
+    expect(res.status).toBe(200);
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(sendMock.mock.calls[0][0]).toBe('a@test.com');
+    expect(sendMock.mock.calls[0][1]).toContain('resetToken=');
+
+    const user = await prisma.user.findUnique({ where: { email: 'a@test.com' } });
+    expect(user?.resetTokenHash).toBeTruthy();
+    expect(user?.resetTokenExpiresAt).toBeTruthy();
+  });
+
+  it('responde 200 igual si el email no existe, sin enviar nada', async () => {
+    const sendMock = vi.spyOn(mailer, 'sendPasswordResetEmail').mockResolvedValue();
+
+    const res = await request(app).post('/api/auth/forgot-password').send({ email: 'nadie@test.com' });
+
+    expect(res.status).toBe(200);
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un email con formato inválido', async () => {
+    const res = await request(app).post('/api/auth/forgot-password').send({ email: 'no-es-un-email' });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/auth/reset-password', () => {
+  async function requestReset(email: string): Promise<string> {
+    let capturedUrl = '';
+    vi.spyOn(mailer, 'sendPasswordResetEmail').mockImplementation(async (_email, url) => {
+      capturedUrl = url;
+    });
+    await request(app).post('/api/auth/forgot-password').send({ email });
+    return new URL(capturedUrl).searchParams.get('resetToken')!;
+  }
+
+  it('cambia la contraseña con un token válido', async () => {
+    await request(app).post('/api/auth/register').send({ email: 'a@test.com', password: 'password123' });
+    const token = await requestReset('a@test.com');
+
+    const res = await request(app).post('/api/auth/reset-password').send({ token, password: 'nuevaClave123' });
+    expect(res.status).toBe(200);
+
+    const login = await request(app).post('/api/auth/login').send({ email: 'a@test.com', password: 'nuevaClave123' });
+    expect(login.status).toBe(200);
+  });
+
+  it('invalida el token después de usarlo', async () => {
+    await request(app).post('/api/auth/register').send({ email: 'a@test.com', password: 'password123' });
+    const token = await requestReset('a@test.com');
+
+    await request(app).post('/api/auth/reset-password').send({ token, password: 'nuevaClave123' });
+    const res = await request(app).post('/api/auth/reset-password').send({ token, password: 'otraClave456' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('rechaza un token inexistente', async () => {
+    const res = await request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: crypto.randomBytes(32).toString('hex'), password: 'nuevaClave123' });
+    expect(res.status).toBe(400);
+  });
+
+  it('rechaza una contraseña de menos de 8 caracteres', async () => {
+    await request(app).post('/api/auth/register').send({ email: 'a@test.com', password: 'password123' });
+    const token = await requestReset('a@test.com');
+
+    const res = await request(app).post('/api/auth/reset-password').send({ token, password: 'corta' });
+    expect(res.status).toBe(400);
   });
 });

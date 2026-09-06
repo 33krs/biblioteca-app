@@ -46,6 +46,22 @@ sin esa variable el backend no arranca. Si usas `docker compose up`, define
 `JWT_SECRET` en tu shell o en un `.env` junto a `docker-compose.yml` (sin
 key, `docker compose` se niega a levantar el servicio `backend`).
 
+### Recuperación de contraseña
+
+- `POST /api/auth/forgot-password` — `{ email }` → genera un token de
+  reseteo (válido 1 hora) si el email existe. Siempre responde 200 con el
+  mismo mensaje, exista o no la cuenta, para no filtrar qué emails están
+  registrados.
+- `POST /api/auth/reset-password` — `{ token, password }` → si el token es
+  válido y no expiró, actualiza la contraseña y lo invalida.
+
+Hoy no hay ningún proveedor de email conectado: el link de reseteo se loguea
+en la consola del backend (`apps/backend/src/lib/mailer.ts`). Para producción
+hay que reemplazar esa función por un envío real (Resend, SendGrid, SMTP...);
+las rutas no cambian. El frontend arma la pantalla de "nueva contraseña" leyendo
+`?resetToken=...` de la URL (`FRONTEND_URL` en `apps/backend/.env` controla el
+dominio con el que se arma ese link).
+
 ## Búsqueda con Google Books
 
 Al añadir un libro puedes buscarlo por título o autor: el backend consulta la
@@ -82,4 +98,6 @@ npm run test:frontend
 2. **HTTPS + dominio** cuando se despliegue en un servidor real: agregar un
    reverse proxy (Nginx/Caddy) delante y certificados con Let's Encrypt.
 3. **CI**: correr `npm run test` y los builds en cada push/PR.
-4. Recuperación de contraseña (hoy no hay forma de resetearla si se olvida).
+4. **Envío real de emails** para la recuperación de contraseña: hoy el link
+   de reseteo solo se loguea en la consola del backend (ver sección de
+   arriba), falta conectar un proveedor (Resend, SendGrid, SMTP...).

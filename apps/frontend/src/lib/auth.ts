@@ -41,3 +41,23 @@ export async function fetchMe(token: string): Promise<AuthUser> {
   const body = await res.json();
   return body.user;
 }
+
+export async function forgotPassword(email: string): Promise<void> {
+  const res = await fetch(`${BASE}/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(body?.error || 'No se pudo procesar la solicitud');
+}
+
+export async function resetPassword(token: string, password: string): Promise<void> {
+  const res = await fetch(`${BASE}/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(body?.error || 'No se pudo actualizar la contraseña');
+}

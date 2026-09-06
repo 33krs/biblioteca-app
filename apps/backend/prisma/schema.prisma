@@ -8,12 +8,14 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  email        String     @unique
-  name         String?
-  passwordHash String?
-  books        UserBook[]
-  createdAt    DateTime   @default(now())
+  id                   String     @id @default(uuid())
+  email                String     @unique
+  name                 String?
+  passwordHash         String?
+  resetTokenHash       String?    @unique
+  resetTokenExpiresAt  DateTime?
+  books                UserBook[]
+  createdAt            DateTime   @default(now())
 }
 
 model Book {

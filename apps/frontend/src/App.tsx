@@ -7,13 +7,31 @@ import ShelfView from './components/ShelfView';
 import BookDetailPanel from './components/BookDetailPanel';
 import AddBookModal from './components/AddBookModal';
 import AuthScreen from './components/AuthScreen';
+import ResetPasswordScreen from './components/ResetPasswordScreen';
+
+function getResetToken(): string | null {
+  return new URLSearchParams(window.location.search).get('resetToken');
+}
 
 export default function App() {
   const { user, ready, hydrate, logout } = useAuthStore();
+  const [resetToken, setResetToken] = useState<string | null>(getResetToken);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  if (resetToken) {
+    return (
+      <ResetPasswordScreen
+        token={resetToken}
+        onDone={() => {
+          window.history.replaceState(null, '', window.location.pathname);
+          setResetToken(null);
+        }}
+      />
+    );
+  }
 
   if (!ready) {
     return (
