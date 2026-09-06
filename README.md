@@ -27,11 +27,24 @@ biblioteca-app/
 
 - `Book`: datos "universales" del libro (título, autor, portada por defecto).
 - `UserBook`: la relación de un usuario con un libro (estado de lectura,
-  valoración, reseña, notas, portada personalizada). Esta separación es la que
-  permite escalar a multiusuario más adelante sin duplicar el catálogo.
+  valoración, reseña, notas, portada personalizada). Esta separación evita
+  duplicar el catálogo entre usuarios distintos que tengan el mismo libro.
 
-Hoy la app corre en **modo single-user**: el backend crea automáticamente un
-usuario local (`local-user`) al arrancar, así que no hace falta loguearse.
+## Autenticación
+
+La app es multiusuario: hay que registrarse/iniciar sesión para ver y editar
+tu propia estantería (cada usuario solo ve y modifica sus propios libros).
+
+- `POST /api/auth/register` — `{ email, password, name? }` → `{ token, user }`
+- `POST /api/auth/login` — `{ email, password }` → `{ token, user }`
+- `GET /api/auth/me` — con `Authorization: Bearer <token>`, devuelve el usuario
+
+El token es un JWT (7 días de expiración) que el frontend guarda en
+`localStorage` y envía en cada petición a `/api/shelf/*`. Hace falta definir
+`JWT_SECRET` en `apps/backend/.env` (ver `.env.example` para generar uno) —
+sin esa variable el backend no arranca. Si usas `docker compose up`, define
+`JWT_SECRET` en tu shell o en un `.env` junto a `docker-compose.yml` (sin
+key, `docker compose` se niega a levantar el servicio `backend`).
 
 ## Búsqueda con Google Books
 
@@ -64,11 +77,9 @@ npm run test:frontend
 
 ## Próximos pasos (roadmap)
 
-1. **Autenticación real** (JWT o sesiones) para pasar a multiusuario — el
-   modelo de datos ya lo soporta, solo falta la capa de auth y filtrar por
-   el usuario logueado en vez del usuario local fijo.
-2. Integración con Google Books
-3. **Migrar el almacenamiento de portadas** de disco local (multer) a
+1. **Migrar el almacenamiento de portadas** de disco local (multer) a
    Cloudinary o S3 para el despliegue en producción.
-4. **HTTPS + dominio** cuando se despliegue en un servidor real: agregar un
+2. **HTTPS + dominio** cuando se despliegue en un servidor real: agregar un
    reverse proxy (Nginx/Caddy) delante y certificados con Let's Encrypt.
+3. **CI**: correr `npm run test` y los builds en cada push/PR.
+4. Recuperación de contraseña (hoy no hay forma de resetearla si se olvida).

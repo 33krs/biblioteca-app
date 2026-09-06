@@ -3,10 +3,9 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { prisma } from '../prismaClient.js';
-import { LOCAL_USER_ID } from '../bootstrap.js';
+import { requireAuth, type AuthedRequest } from '../middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DEFAULT_USER_ID = LOCAL_USER_ID;
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -21,10 +20,19 @@ const upload = multer({
 
 const router = Router();
 
+router.use(requireAuth);
+
+// Confirma que el userBook :id existe y pertenece al usuario autenticado.
+async function findOwnedUserBook(id: string, userId: string) {
+  const userBook = await prisma.userBook.findUnique({ where: { id } });
+  if (!userBook || userBook.userId !== userId) return null;
+  return userBook;
+}
+
 // GET /api/shelf - lista los libros del usuario
-router.get('/', async (_req, res) => {
+router.get('/', async (req: AuthedRequest, res) => {
   const items = await prisma.userBook.findMany({
-    where: { userId: DEFAULT_USER_ID },
+    where: { userId: req.userId },
     include: { book: true },
     orderBy: { createdAt: 'asc' },
   });
@@ -32,7 +40,7 @@ router.get('/', async (_req, res) => {
 });
 
 // POST /api/shelf - añade un libro (crea el Book si no existe todavía)
-router.post('/', async (req, res) => {
+router.post('/', async (req: AuthedRequest, res) => {
   const { title, author, coverUrl, isbn, publishedYear, description, externalId } = req.body;
   if (!title || !author) {
     return res.status(400).json({ error: 'title y author son obligatorios' });
@@ -53,9 +61,9 @@ router.post('/', async (req, res) => {
   });
 
   const userBook = await prisma.userBook.upsert({
-    where: { userId_bookId: { userId: DEFAULT_USER_ID, bookId: book.id } },
+    where: { userId_bookId: { userId: req.userId!, bookId: book.id } },
     update: {},
-    create: { userId: DEFAULT_USER_ID, bookId: book.id },
+    create: { userId: req.userId!, bookId: book.id },
     include: { book: true },
   });
 
@@ -63,10 +71,12 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH /api/shelf/:id - actualiza estado, valoración, reseña, notas o portada
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', async (req: AuthedRequest, res) => {
   const { id } = req.params;
-  const { status, rating, review, notes, customCoverUrl } = req.body;
+  const owned = await findOwnedUserBook(id, req.userId!);
+  if (!owned) return res.status(404).json({ error: 'No encontrado' });
 
+  const { status, rating, review, notes, customCoverUrl } = req.body;
   const userBook = await prisma.userBook.update({
     where: { id },
     data: { status, rating, review, notes, customCoverUrl },
@@ -77,15 +87,21 @@ router.patch('/:id', async (req, res) => {
 });
 
 // DELETE /api/shelf/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: AuthedRequest, res) => {
   const { id } = req.params;
+  const owned = await findOwnedUserBook(id, req.userId!);
+  if (!owned) return res.status(404).json({ error: 'No encontrado' });
+
   await prisma.userBook.delete({ where: { id } });
   res.status(204).send();
 });
 
 // POST /api/shelf/:id/cover - sube una portada personalizada desde el computador
-router.post('/:id/cover', upload.single('cover'), async (req, res) => {
+router.post('/:id/cover', upload.single('cover'), async (req: AuthedRequest, res) => {
   const { id } = req.params;
+  const owned = await findOwnedUserBook(id, req.userId!);
+  if (!owned) return res.status(404).json({ error: 'No encontrado' });
+
   if (!req.file) {
     return res.status(400).json({ error: 'No se recibió ningún archivo' });
   }

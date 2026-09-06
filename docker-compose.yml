@@ -13,6 +13,7 @@ services:
     environment:
       DATABASE_URL: postgresql://biblioteca:biblioteca@db:5432/biblioteca?schema=public
       PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en tu entorno o en un archivo .env junto a docker-compose.yml}
     depends_on:
       db:
         condition: service_healthy

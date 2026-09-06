@@ -1,12 +1,36 @@
 import { useEffect, useState } from 'react';
 import { useLibraryStore } from './store/useLibraryStore';
+import { useAuthStore } from './store/useAuthStore';
 import Header from './components/Header';
 import FilterTabs from './components/FilterTabs';
 import ShelfView from './components/ShelfView';
 import BookDetailPanel from './components/BookDetailPanel';
 import AddBookModal from './components/AddBookModal';
+import AuthScreen from './components/AuthScreen';
 
 export default function App() {
+  const { user, ready, hydrate, logout } = useAuthStore();
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-ink flex items-center justify-center">
+        <p className="font-sans text-muted">Cargando...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
+  return <Library onLogout={logout} />;
+}
+
+function Library({ onLogout }: { onLogout: () => void }) {
   const { books, filter, query, setFilter, setQuery, load, addBook, updateBook, deleteBook, uploadCover, loading, error } =
     useLibraryStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -29,7 +53,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-ink">
       <div className="max-w-5xl mx-auto px-6 py-10">
-        <Header total={books.length} readCount={readCount} query={query} onQueryChange={setQuery} />
+        <Header total={books.length} readCount={readCount} query={query} onQueryChange={setQuery} onLogout={onLogout} />
         <FilterTabs value={filter} onChange={setFilter} />
 
         {loading && <p className="font-sans text-muted">Cargando estantería...</p>}
