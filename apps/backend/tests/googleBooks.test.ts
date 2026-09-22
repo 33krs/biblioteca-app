@@ -47,7 +47,12 @@ describe('GET /api/books/search', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([
-      expect.objectContaining({ externalId: 'g1', title: 'Dune', author: 'Frank Herbert', publishedYear: 1965 }),
+      expect.objectContaining({
+        externalId: 'g1',
+        title: 'Dune',
+        author: 'Frank Herbert',
+        publishedYear: 1965,
+      }),
     ]);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
@@ -65,7 +70,11 @@ describe('GET /api/books/search', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([
-      expect.objectContaining({ externalId: '/works/OL1W', title: 'Dune', author: 'Frank Herbert' }),
+      expect.objectContaining({
+        externalId: '/works/OL1W',
+        title: 'Dune',
+        author: 'Frank Herbert',
+      }),
     ]);
     expect(fetch).toHaveBeenCalledTimes(2);
   });

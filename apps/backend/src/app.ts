@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import shelfRouter from './routes/shelf.js';
 import booksRouter from './routes/googleBooks.js';
 import authRouter from './routes/auth.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -38,6 +39,7 @@ export function createApp() {
   app.use('/api/shelf', shelfRouter);
   app.use('/api/books', booksRouter);
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  app.use(errorHandler);
 
   return app;
 }

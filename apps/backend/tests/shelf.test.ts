@@ -34,7 +34,10 @@ describe('GET /api/shelf', () => {
 
 describe('POST /api/shelf', () => {
   it('crea el libro y la relación con el usuario', async () => {
-    const res = await auth(request(app).post('/api/shelf')).send({ title: 'Dune', author: 'Frank Herbert' });
+    const res = await auth(request(app).post('/api/shelf')).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
 
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('TO_READ');
@@ -47,11 +50,15 @@ describe('POST /api/shelf', () => {
   it('responde 400 si falta título o autor', async () => {
     const res = await auth(request(app).post('/api/shelf')).send({ title: 'Solo título' });
     expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 
   it('es idempotente: añadir el mismo libro dos veces no lo duplica', async () => {
     await auth(request(app).post('/api/shelf')).send({ title: 'Dune', author: 'Frank Herbert' });
-    const second = await auth(request(app).post('/api/shelf')).send({ title: 'Dune', author: 'Frank Herbert' });
+    const second = await auth(request(app).post('/api/shelf')).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
 
     expect(second.status).toBe(201);
 
@@ -77,7 +84,10 @@ describe('POST /api/shelf', () => {
 
 describe('PATCH /api/shelf/:id', () => {
   it('actualiza estado, valoración, reseña y notas', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({ title: 'Dune', author: 'Frank Herbert' });
+    const created = await auth(request(app).post('/api/shelf')).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
 
     const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`)).send({
       status: 'READ',
@@ -87,11 +97,19 @@ describe('PATCH /api/shelf/:id', () => {
     });
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ status: 'READ', rating: 5, review: 'Excelente', notes: 'Releer' });
+    expect(res.body).toMatchObject({
+      status: 'READ',
+      rating: 5,
+      review: 'Excelente',
+      notes: 'Releer',
+    });
   });
 
   it('responde 404 si el userBook es de otro usuario', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({ title: 'Dune', author: 'Frank Herbert' });
+    const created = await auth(request(app).post('/api/shelf')).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
 
     const other = await request(app)
       .post('/api/auth/register')
@@ -104,11 +122,27 @@ describe('PATCH /api/shelf/:id', () => {
 
     expect(res.status).toBe(404);
   });
+
+  it('rechaza una valoración fuera del rango permitido', async () => {
+    const created = await auth(request(app).post('/api/shelf')).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
+
+    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`)).send({ rating: 6 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+    expect(res.body.details).toEqual(expect.any(Array));
+  });
 });
 
 describe('DELETE /api/shelf/:id', () => {
   it('elimina el libro de la estantería', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({ title: 'Dune', author: 'Frank Herbert' });
+    const created = await auth(request(app).post('/api/shelf')).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
 
     const del = await auth(request(app).delete(`/api/shelf/${created.body.id}`));
     expect(del.status).toBe(204);
@@ -118,7 +152,10 @@ describe('DELETE /api/shelf/:id', () => {
   });
 
   it('responde 404 si el userBook es de otro usuario', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({ title: 'Dune', author: 'Frank Herbert' });
+    const created = await auth(request(app).post('/api/shelf')).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
 
     const other = await request(app)
       .post('/api/auth/register')

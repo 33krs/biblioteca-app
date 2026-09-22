@@ -2,6 +2,7 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
+import { assertTestDatabaseUrl } from './databaseGuard.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendRoot = path.join(__dirname, '..');
@@ -13,6 +14,7 @@ const backendRoot = path.join(__dirname, '..');
 export default function globalSetup() {
   const env = { ...process.env };
   dotenv.config({ path: path.join(backendRoot, '.env.test'), processEnv: env });
+  assertTestDatabaseUrl(env.DATABASE_URL);
 
   execSync('npx prisma db push --skip-generate --accept-data-loss', {
     cwd: backendRoot,

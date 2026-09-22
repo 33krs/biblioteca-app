@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import { searchBooksQuerySchema } from '../schemas/books.js';
 
 const router = Router();
 
@@ -48,7 +50,9 @@ async function searchOpenLibrary(q: string) {
       externalId: doc.key,
       title: doc.title as string,
       author: doc.author_name?.join(', ') || 'Autor desconocido',
-      coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : undefined,
+      coverUrl: doc.cover_i
+        ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
+        : undefined,
       isbn: doc.isbn?.[0],
       publishedYear: doc.first_publish_year,
       description: undefined as string | undefined,
@@ -74,7 +78,9 @@ async function searchGoogleBooks(q: string) {
     .filter((item) => item.volumeInfo?.title)
     .map((item) => {
       const info = item.volumeInfo!;
-      const isbn = info.industryIdentifiers?.find((i) => i.type === 'ISBN_13' || i.type === 'ISBN_10')?.identifier;
+      const isbn = info.industryIdentifiers?.find(
+        (i) => i.type === 'ISBN_13' || i.type === 'ISBN_10',
+      )?.identifier;
       const cover = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
 
       return {
@@ -83,7 +89,9 @@ async function searchGoogleBooks(q: string) {
         author: info.authors?.join(', ') || 'Autor desconocido',
         coverUrl: cover ? cover.replace('http://', 'https://') : undefined,
         isbn,
-        publishedYear: info.publishedDate ? parseInt(info.publishedDate.slice(0, 4), 10) || undefined : undefined,
+        publishedYear: info.publishedDate
+          ? parseInt(info.publishedDate.slice(0, 4), 10) || undefined
+          : undefined,
         description: info.description,
       };
     });
@@ -92,30 +100,38 @@ async function searchGoogleBooks(q: string) {
 // GET /api/books/search?q=... - busca el libro primero en Google Books y,
 // si esa llamada falla (timeout, bloqueo, sin salida a internet, etc.),
 // reintenta en Open Library antes de rendirse.
-router.get('/search', async (req, res) => {
-  const q = typeof req.query.q === 'string' ? req.query.q : '';
-  if (!q.trim()) return res.json([]);
+router.get(
+  '/search',
+  asyncHandler(async (req, res) => {
+    const { q = '' } = searchBooksQuerySchema.parse(req.query);
+    if (!q.trim()) return res.json([]);
 
-  try {
-    console.log(`[books] buscando en Google Books: "${q}"`);
-    const results = await searchGoogleBooks(q);
-    console.log(`[books] Google Books devolvió ${results.length} resultados`);
-    return res.json(results);
-  } catch (err) {
-    console.error(`[books] Google Books falló: ${err instanceof Error ? err.message : String(err)}`);
-  }
+    try {
+      console.log(`[books] buscando en Google Books: "${q}"`);
+      const results = await searchGoogleBooks(q);
+      console.log(`[books] Google Books devolvió ${results.length} resultados`);
+      return res.json(results);
+    } catch (err) {
+      console.error(
+        `[books] Google Books falló: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
 
-  try {
-    console.log(`[books] intentando con Open Library: "${q}"`);
-    const results = await searchOpenLibrary(q);
-    console.log(`[books] Open Library devolvió ${results.length} resultados`);
-    return res.json(results);
-  } catch (err) {
-    console.error(`[books] Open Library también falló: ${err instanceof Error ? err.message : String(err)}`);
-    return res.status(502).json({
-      error: 'No se pudo contactar a Google Books ni a Open Library. Revisa la conexión a internet del contenedor backend.',
-    });
-  }
-});
+    try {
+      console.log(`[books] intentando con Open Library: "${q}"`);
+      const results = await searchOpenLibrary(q);
+      console.log(`[books] Open Library devolvió ${results.length} resultados`);
+      return res.json(results);
+    } catch (err) {
+      console.error(
+        `[books] Open Library también falló: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return res.status(502).json({
+        error:
+          'No se pudo contactar a Google Books ni a Open Library. Revisa la conexión a internet del contenedor backend.',
+      });
+    }
+  }),
+);
 
 export default router;
