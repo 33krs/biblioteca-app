@@ -88,4 +88,12 @@ describe('GET /api/books/search', () => {
     expect(res.body.error).toBeTruthy();
     expect(fetch).toHaveBeenCalledTimes(2);
   });
+
+  it('rechaza una query demasiado larga antes de llamar a las APIs', async () => {
+    const res = await request(app).get(`/api/books/search?q=${'a'.repeat(201)}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

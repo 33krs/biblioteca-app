@@ -22,6 +22,22 @@ describe('rutas de /api/shelf sin autenticación', () => {
     const res = await request(app).get('/api/shelf');
     expect(res.status).toBe(401);
   });
+
+  it.each([
+    ['POST', '/api/shelf'],
+    ['PATCH', '/api/shelf/missing-id'],
+    ['DELETE', '/api/shelf/missing-id'],
+  ])('responde 401 para %s %s', async (method, path) => {
+    const routeRequest =
+      method === 'POST'
+        ? request(app).post(path)
+        : method === 'PATCH'
+        ? request(app).patch(path)
+        : request(app).delete(path);
+    const res = await routeRequest;
+
+    expect(res.status).toBe(401);
+  });
 });
 
 describe('GET /api/shelf', () => {
@@ -134,6 +150,32 @@ describe('PATCH /api/shelf/:id', () => {
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
     expect(res.body.details).toEqual(expect.any(Array));
+  });
+
+  it('rechaza una actualización sin campos', async () => {
+    const created = await auth(request(app).post('/api/shelf')).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
+
+    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`)).send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('rechaza un estado de lectura desconocido', async () => {
+    const created = await auth(request(app).post('/api/shelf')).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
+
+    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`)).send({
+      status: 'UNKNOWN',
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 });
 

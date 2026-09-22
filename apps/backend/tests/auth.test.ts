@@ -48,6 +48,17 @@ describe('POST /api/auth/register', () => {
       .send({ email: 'a@test.com', password: 'otraClave123' });
     expect(res.status).toBe(409);
   });
+
+  it('normaliza el email y el nombre antes de responder', async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      email: 'ANA@TEST.COM',
+      password: 'password123',
+      name: '  Ana  ',
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.user).toMatchObject({ email: 'ana@test.com', name: 'Ana' });
+  });
 });
 
 describe('POST /api/auth/login', () => {
@@ -108,6 +119,20 @@ describe('GET /api/auth/me', () => {
       .get('/api/auth/me')
       .set('Authorization', 'Bearer no-es-un-token');
     expect(res.status).toBe(401);
+  });
+
+  it('responde 404 si el usuario del token ya no existe', async () => {
+    const reg = await request(app)
+      .post('/api/auth/register')
+      .send({ email: 'a@test.com', password: 'password123' });
+
+    await prisma.user.delete({ where: { email: 'a@test.com' } });
+
+    const res = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${reg.body.token}`);
+
+    expect(res.status).toBe(404);
   });
 });
 
