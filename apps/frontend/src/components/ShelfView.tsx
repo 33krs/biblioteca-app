@@ -15,7 +15,10 @@ function chunk<T>(list: T[], size: number): T[][] {
   return out;
 }
 
-const PLANK_STYLE = { background: 'linear-gradient(180deg, #7a5a3f 0%, #6B4A34 40%, #4E3626 100%)', height: 14 };
+const PLANK_STYLE = {
+  background: 'linear-gradient(180deg, #7a5a3f 0%, #6B4A34 40%, #4E3626 100%)',
+  height: 14,
+};
 
 export default function ShelfView({ books, onSelect, onAdd, perRow = 6 }: Props) {
   const shelves = chunk(books, perRow);
@@ -34,7 +37,9 @@ export default function ShelfView({ books, onSelect, onAdd, perRow = 6 }: Props)
       ))}
 
       {books.length === 0 && (
-        <p className="font-sans text-center py-10 text-muted">No hay libros que coincidan con la búsqueda.</p>
+        <p className="font-sans text-center py-10 text-muted">
+          No hay libros que coincidan con la búsqueda.
+        </p>
       )}
 
       <div>

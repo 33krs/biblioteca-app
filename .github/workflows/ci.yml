@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: biblioteca_test
+          POSTGRES_USER: biblioteca
+          POSTGRES_PASSWORD: biblioteca
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U biblioteca -d biblioteca_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DATABASE_URL: postgresql://biblioteca:biblioteca@localhost:5432/biblioteca_test?schema=public
+      JWT_SECRET: ci-only-test-secret
+      DISABLE_RATE_LIMIT: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run prisma:generate --workspace=apps/backend
+      - run: npm run db:push --workspace=apps/backend
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build

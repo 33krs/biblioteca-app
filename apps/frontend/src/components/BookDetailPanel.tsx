@@ -11,7 +11,13 @@ interface Props {
   onUploadCover: (file: File) => void;
 }
 
-export default function BookDetailPanel({ userBook, onClose, onSave, onDelete, onUploadCover }: Props) {
+export default function BookDetailPanel({
+  userBook,
+  onClose,
+  onSave,
+  onDelete,
+  onUploadCover,
+}: Props) {
   const { book } = userBook;
   const [status, setStatus] = useState<ReadingStatus>(userBook.status);
   const [rating, setRating] = useState(userBook.rating ?? 0);
@@ -68,7 +74,13 @@ export default function BookDetailPanel({ userBook, onClose, onSave, onDelete, o
         </div>
 
         <div className="flex gap-2 justify-center mb-6">
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFile}
+            className="hidden"
+          />
           <button
             onClick={() => fileInputRef.current?.click()}
             className="font-sans px-3 py-1.5 rounded border text-xs flex items-center gap-1 border-border text-paper"
@@ -87,7 +99,9 @@ export default function BookDetailPanel({ userBook, onClose, onSave, onDelete, o
 
         <p className="font-label text-xs mb-2 text-muted">Estado de lectura</p>
         <div className="flex gap-2 mb-6">
-          {(Object.entries(STATUS_CONFIG) as [ReadingStatus, { label: string; ribbon: string }][]).map(([key, cfg]) => (
+          {(
+            Object.entries(STATUS_CONFIG) as [ReadingStatus, { label: string; ribbon: string }][]
+          ).map(([key, cfg]) => (
             <button
               key={key}
               onClick={() => setStatus(key)}
@@ -130,10 +144,16 @@ export default function BookDetailPanel({ userBook, onClose, onSave, onDelete, o
         />
 
         <div className="flex gap-2">
-          <button onClick={save} className="font-sans flex-1 py-2 rounded text-sm font-medium bg-brass text-ink">
+          <button
+            onClick={save}
+            className="font-sans flex-1 py-2 rounded text-sm font-medium bg-brass text-ink"
+          >
             Guardar
           </button>
-          <button onClick={onDelete} className="font-sans px-4 py-2 rounded text-sm border border-oxblood text-red-300">
+          <button
+            onClick={onDelete}
+            className="font-sans px-4 py-2 rounded text-sm border border-oxblood text-red-300"
+          >
             Eliminar
           </button>
         </div>

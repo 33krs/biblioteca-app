@@ -17,7 +17,11 @@ async function parseAuthResponse(res: Response, fallbackError: string): Promise<
   return body;
 }
 
-export async function register(email: string, password: string, name?: string): Promise<AuthResponse> {
+export async function register(
+  email: string,
+  password: string,
+  name?: string,
+): Promise<AuthResponse> {
   const res = await fetch(`${BASE}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

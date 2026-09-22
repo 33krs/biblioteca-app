@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import * as authApi from '../lib/auth';
 
-export default function ResetPasswordScreen({ token, onDone }: { token: string; onDone: () => void }) {
+export default function ResetPasswordScreen({
+  token,
+  onDone,
+}: {
+  token: string;
+  onDone: () => void;
+}) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -28,7 +34,9 @@ export default function ResetPasswordScreen({ token, onDone }: { token: string; 
 
         {success ? (
           <>
-            <p className="font-sans text-sm text-muted mb-6">Tu contraseña se actualizó correctamente.</p>
+            <p className="font-sans text-sm text-muted mb-6">
+              Tu contraseña se actualizó correctamente.
+            </p>
             <button
               type="button"
               onClick={onDone}

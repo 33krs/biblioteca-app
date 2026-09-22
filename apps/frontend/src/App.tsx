@@ -49,8 +49,20 @@ export default function App() {
 }
 
 function Library({ onLogout }: { onLogout: () => void }) {
-  const { books, filter, query, setFilter, setQuery, load, addBook, updateBook, deleteBook, uploadCover, loading, error } =
-    useLibraryStore();
+  const {
+    books,
+    filter,
+    query,
+    setFilter,
+    setQuery,
+    load,
+    addBook,
+    updateBook,
+    deleteBook,
+    uploadCover,
+    loading,
+    error,
+  } = useLibraryStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
@@ -61,7 +73,8 @@ function Library({ onLogout }: { onLogout: () => void }) {
   const filtered = books.filter((b) => {
     const matchesStatus = filter === 'ALL' || b.status === filter;
     const q = query.trim().toLowerCase();
-    const matchesQuery = q === '' || b.book.title.toLowerCase().includes(q) || b.book.author.toLowerCase().includes(q);
+    const matchesQuery =
+      q === '' || b.book.title.toLowerCase().includes(q) || b.book.author.toLowerCase().includes(q);
     return matchesStatus && matchesQuery;
   });
 
@@ -71,13 +84,21 @@ function Library({ onLogout }: { onLogout: () => void }) {
   return (
     <div className="min-h-screen bg-ink">
       <div className="max-w-5xl mx-auto px-6 py-10">
-        <Header total={books.length} readCount={readCount} query={query} onQueryChange={setQuery} onLogout={onLogout} />
+        <Header
+          total={books.length}
+          readCount={readCount}
+          query={query}
+          onQueryChange={setQuery}
+          onLogout={onLogout}
+        />
         <FilterTabs value={filter} onChange={setFilter} />
 
         {loading && <p className="font-sans text-muted">Cargando estantería...</p>}
         {error && <p className="font-sans text-red-300">{error}</p>}
 
-        {!loading && !error && <ShelfView books={filtered} onSelect={setSelectedId} onAdd={() => setAddOpen(true)} />}
+        {!loading && !error && (
+          <ShelfView books={filtered} onSelect={setSelectedId} onAdd={() => setAddOpen(true)} />
+        )}
       </div>
 
       {addOpen && <AddBookModal onClose={() => setAddOpen(false)} onAdd={addBook} />}

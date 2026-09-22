@@ -96,10 +96,10 @@ export default function AuthScreen() {
           {submitting
             ? 'Un momento...'
             : mode === 'login'
-              ? 'Entrar'
-              : mode === 'register'
-                ? 'Crear cuenta'
-                : 'Enviar instrucciones'}
+            ? 'Entrar'
+            : mode === 'register'
+            ? 'Crear cuenta'
+            : 'Enviar instrucciones'}
         </button>
 
         {mode === 'login' && (
@@ -114,7 +114,9 @@ export default function AuthScreen() {
 
         <button
           type="button"
-          onClick={() => switchMode(mode === 'register' ? 'login' : mode === 'forgot' ? 'login' : 'register')}
+          onClick={() =>
+            switchMode(mode === 'register' ? 'login' : mode === 'forgot' ? 'login' : 'register')
+          }
           className="font-sans w-full text-xs text-muted underline mt-2"
         >
           {mode === 'register' && '¿Ya tienes cuenta? Inicia sesión'}

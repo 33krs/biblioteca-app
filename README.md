@@ -46,18 +46,6 @@ sin esa variable el backend no arranca. Si usas `docker compose up`, define
 `JWT_SECRET` en tu shell o en un `.env` junto a `docker-compose.yml` (sin
 key, `docker compose` se niega a levantar el servicio `backend`).
 
-### Seguridad
-
-- **Rate limiting** en `/api/auth/*` (`src/middleware/rateLimit.ts`): 10
-  intentos/15min en login, 5/hora en forgot-password, 30/15min en el resto,
-  todo por IP. Se desactiva en tests con `DISABLE_RATE_LIMIT=true`.
-- **Helmet** para headers HTTP estándar (CSP, `X-Frame-Options`, HSTS, etc.).
-- **CORS restringido**: solo acepta `FRONTEND_URL` y los orígenes conocidos
-  de desarrollo (`localhost:5173`, `localhost:8080`); en la práctica el
-  navegador siempre habla con el backend a través de un proxy same-origin
-  (Vite en dev, Nginx en `docker-compose`), así que esto es una capa extra,
-  no algo de lo que dependa el funcionamiento normal.
-
 ### Recuperación de contraseña
 
 - `POST /api/auth/forgot-password` — `{ email }` → genera un token de
@@ -103,13 +91,17 @@ npm run test:backend
 npm run test:frontend
 ```
 
-## Próximos pasos (roadmap)
+### Quality checks
 
-1. **Migrar el almacenamiento de portadas** de disco local (multer) a
-   Cloudinary o S3 para el despliegue en producción.
-2. **HTTPS + dominio** cuando se despliegue en un servidor real: agregar un
-   reverse proxy (Nginx/Caddy) delante y certificados con Let's Encrypt.
-3. **CI**: correr `npm run test` y los builds en cada push/PR.
-4. **Envío real de emails** para la recuperación de contraseña: hoy el link
-   de reseteo solo se loguea en la consola del backend (ver sección de
-   arriba), falta conectar un proveedor (Resend, SendGrid, SMTP...).
+Antes de abrir un pull request, ejecuta la validación completa:
+
+```bash
+npm run quality       # formato, lint, tipos, tests y builds
+npm run format:check
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Estos mismos checks se ejecutan automáticamente en GitHub Actions para cada
+push a `main` y cada pull request.

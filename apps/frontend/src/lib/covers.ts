@@ -1,6 +1,14 @@
 import type { ReadingStatus } from '../types';
 
-export const PALETTE = ['#5b4a7a', '#4f6650', '#7a3b3b', '#3a4a5a', '#8a6a3a', '#3a5a58', '#6b4a34'];
+export const PALETTE = [
+  '#5b4a7a',
+  '#4f6650',
+  '#7a3b3b',
+  '#3a4a5a',
+  '#8a6a3a',
+  '#3a5a58',
+  '#6b4a34',
+];
 
 export const STATUS_CONFIG: Record<ReadingStatus, { label: string; ribbon: string }> = {
   TO_READ: { label: 'Por leer', ribbon: '#9c9484' },
