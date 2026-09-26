@@ -49,7 +49,7 @@ The change should be delivered only with reproducible local verification and a r
 
 - T1: complete — `node_modules/.bin/prettier` and its target lacked executable bits; the tracked-file diffs were CRLF-only and `.atl/`/`.codegraph/` are local generated artifacts.
 - T2: partial — formatting, lint, typecheck, frontend tests, and build pass; backend tests are blocked because PostgreSQL is unavailable at `localhost:5433`.
-- T3: in progress — the frontend Vitest storage setup fix is ready to commit; generated artifacts remain untracked and excluded.
+- T3: complete — committed as `7463528` (`fix(test): provide frontend storage in vitest`); generated artifacts remain untracked and excluded.
 
 ## Verification Evidence
 
@@ -62,4 +62,4 @@ The change should be delivered only with reproducible local verification and a r
 
 ## Next Step
 
-Commit the test-environment fix and task evidence; rerun backend tests when PostgreSQL is available.
+Next external step: start PostgreSQL on port `5433` and rerun `npm run test:backend`.
