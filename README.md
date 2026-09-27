@@ -105,3 +105,118 @@ npm run build
 
 Estos mismos checks se ejecutan automáticamente en GitHub Actions para cada
 push a `main` y cada pull request.
+
+## PostgreSQL con Docker
+
+La configuración de Docker Compose utiliza PostgreSQL 18.6 y guarda sus datos
+en el volumen `pgdata18`. Este volumen tiene una identidad distinta del volumen
+`pgdata` usado anteriormente por PostgreSQL 16: **no montes el volumen anterior
+en un contenedor PostgreSQL 18**, porque los formatos físicos entre versiones
+mayores no son compatibles.
+
+### Variables de entorno
+
+Copia el ejemplo de configuración y reemplaza los valores indicados:
+
+```bash
+cp .env.example .env
+```
+
+- `POSTGRES_DB`, `POSTGRES_USER` y `POSTGRES_PORT` tienen valores locales
+  predeterminados en Compose.
+- `POSTGRES_PASSWORD` y `JWT_SECRET` son obligatorios y no tienen valores
+  predeterminados.
+- `FRONTEND_URL` usa `http://localhost:8080` de forma predeterminada.
+
+No confirmes `.env` ni respaldos de bases de datos en Git.
+
+### Inicio local desde cero
+
+Para una instalación nueva, crea `.env` y levanta los servicios:
+
+```bash
+docker compose up -d --build
+docker compose ps
+```
+
+PostgreSQL inicializará una base vacía en el nuevo volumen `pgdata18`. El
+volumen anterior permanece separado y no se elimina automáticamente.
+
+### Migración lógica de PostgreSQL 16 a 18
+
+Una actualización mayor requiere una exportación y restauración lógica. Antes
+de modificar o detener definitivamente el entorno PostgreSQL 16:
+
+1. Crea un directorio local ignorado por Git y genera el respaldo desde el
+   contenedor PostgreSQL 16 todavía operativo:
+
+   ```bash
+   mkdir -p backups
+   docker compose exec -T db pg_dump \
+     -U "${POSTGRES_USER:-biblioteca}" \
+     -d "${POSTGRES_DB:-biblioteca}" \
+     --format=custom --no-owner --no-acl \
+     > backups/biblioteca-pg16.dump
+   ```
+
+2. Verifica que el archivo exista, no esté vacío y pueda ser listado:
+
+   ```bash
+   test -s backups/biblioteca-pg16.dump
+   docker compose exec -T db pg_restore --list \
+     < backups/biblioteca-pg16.dump > /dev/null
+   ```
+
+3. Detén PostgreSQL 16 **sin ejecutar** `docker compose down --volumes` y
+   conserva tanto el respaldo como el volumen `pgdata` anterior.
+4. Con esta configuración, levanta primero PostgreSQL 18 en `pgdata18`:
+
+   ```bash
+   docker compose up -d db
+   docker compose ps db
+   ```
+
+5. Restaura el respaldo en la base nueva y revisa cualquier error antes de
+   iniciar el backend:
+
+   ```bash
+   docker compose exec -T db pg_restore \
+     -U "${POSTGRES_USER:-biblioteca}" \
+     -d "${POSTGRES_DB:-biblioteca}" \
+     --no-owner --no-acl --exit-on-error \
+     < backups/biblioteca-pg16.dump
+   ```
+
+6. Compara los conteos de las tablas relevantes y ejecuta las pruebas de la
+   aplicación antes de retirar el entorno anterior.
+
+Si PostgreSQL 16 se ejecuta desde otra copia del repositorio o con otro nombre
+de proyecto Compose, identifica el nombre real del contenedor y del volumen con
+`docker compose ps` y `docker volume ls`. No asumas sus nombres ni renombres el
+volumen físico.
+
+### Bases existentes y línea base de Prisma
+
+Una base existente puede contener las tablas de la aplicación sin la tabla
+`_prisma_migrations` si fue creada anteriormente con `prisma db push`. En ese
+caso:
+
+1. Conserva y verifica un respaldo antes de cualquier operación.
+2. Compara el esquema real con las migraciones versionadas en
+   `apps/backend/prisma/migrations` y corrige cualquier diferencia.
+3. Sólo si ambos esquemas son equivalentes, marca las migraciones existentes
+   como aplicadas, en orden cronológico, mediante `prisma migrate resolve`.
+4. Ejecuta `prisma migrate deploy` y valida datos, índices y restricciones.
+
+Nunca marques una migración como aplicada únicamente porque existan tablas con
+nombres similares. Una línea base incorrecta puede ocultar diferencias de
+esquema y provocar fallos en despliegues posteriores.
+
+### Rollback
+
+Si la validación de PostgreSQL 18 falla, detén los servicios nuevos sin borrar
+volúmenes, vuelve a la configuración PostgreSQL 16 y monta exclusivamente el
+volumen `pgdata` anterior con PostgreSQL 16. El volumen `pgdata18` y el respaldo
+deben conservarse para diagnóstico. No escribas en ambas bases durante el
+rollback y no elimines ningún volumen hasta confirmar la integridad y el origen
+de los datos activos.

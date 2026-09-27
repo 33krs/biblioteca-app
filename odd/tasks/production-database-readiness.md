@@ -37,13 +37,13 @@ The Docker runtime and integration tests currently use `prisma db push --accept-
 
 ## Tasks
 
-- [ ] **DB-01 — Upgrade PostgreSQL and define the environment contract**
+- [x] **DB-01 — Upgrade PostgreSQL and define the environment contract**
   - Route: delegated direct; mapping and writer triggers apply because the work spans Compose, environment documentation, and operational documentation.
   - Use PostgreSQL `18.6-alpine` with a new volume identity.
   - Add safe backup, restore, fresh-volume, and rollback instructions.
   - Include `.gitignore` in this configuration work unit.
-  - Checks: Compose config, backup validity, Docker image availability, documentation review.
-  - Commit: pending.
+  - Checks: Compose config passed; PostgreSQL 18.6 image pulled; verified backup SHA-256 `7c453d0752323b04bdc27c52cdaafcc563620373a88ff3592bf529e0b7bfc004`; both `pgdata` and `pgdata18` volumes preserved; documentation formatted.
+  - Commit: pending creation (`chore(db): prepare PostgreSQL 18 upgrade`).
   - RDD: pending.
 - [ ] **DB-02 — Make migrations authoritative**
   - Route: delegated direct; writer trigger applies across Docker startup, test setup, CI, and scripts.
@@ -80,4 +80,4 @@ The Docker runtime and integration tests currently use `prisma db push --accept-
 - Current branch: `chore/production-database-readiness`.
 - PostgreSQL official release evidence: 18.6 is stable; PostgreSQL 19 Beta 4 is not production-ready.
 - Existing migrations: `20260906020329_init` and `20260906092325_add_password_reset_token`.
-- Next step: complete DB-01.
+- Next step: commit DB-01 and complete DB-02.

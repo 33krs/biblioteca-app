@@ -1,6 +1,7 @@
 node_modules
 dist
 .env
+backups/
 apps/backend/uploads/*
 !apps/backend/uploads/.gitkeep
 PROJECT_PLAN.md
