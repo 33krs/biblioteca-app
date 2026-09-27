@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { prisma } from '../prismaClient.js';
 import { requireAuth, type AuthedRequest } from '../middleware/auth.js';
+import { requireCsrf } from '../middleware/csrf.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { validateBody } from '../middleware/validate.js';
 import { createShelfItemSchema, updateShelfItemSchema } from '../schemas/shelf.js';
@@ -24,6 +25,7 @@ const upload = multer({
 const router = Router();
 
 router.use(requireAuth);
+router.use(requireCsrf);
 
 // Confirma que el userBook :id existe y pertenece al usuario autenticado.
 async function findOwnedUserBook(id: string, userId: string) {

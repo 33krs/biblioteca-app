@@ -4,17 +4,23 @@ import { createApp } from '../src/app.js';
 
 const app = createApp();
 
-let token: string;
+let cookies: string[];
+let csrfToken: string;
 
 beforeEach(async () => {
   const res = await request(app)
     .post('/api/auth/register')
     .send({ email: 'owner@test.com', password: 'password123' });
-  token = res.body.token;
+  cookies = res.headers['set-cookie'];
+  const csrfCookie = cookies.find((cookie) => cookie.startsWith('biblioteca.csrf='));
+  if (!csrfCookie) throw new Error('CSRF cookie was not set');
+  csrfToken = decodeURIComponent(csrfCookie.split(';', 1)[0].split('=').slice(1).join('='));
 });
 
-function auth<T extends request.Test>(req: T): T {
-  return req.set('Authorization', `Bearer ${token}`) as T;
+function auth<T extends request.Test>(req: T, csrf = false): T {
+  req.set('Cookie', cookies);
+  if (csrf) req.set('X-CSRF-Token', csrfToken);
+  return req;
 }
 
 describe('rutas de /api/shelf sin autenticación', () => {
@@ -49,8 +55,16 @@ describe('GET /api/shelf', () => {
 });
 
 describe('POST /api/shelf', () => {
-  it('crea el libro y la relación con el usuario', async () => {
+  it('rechaza solicitudes autenticadas sin token CSRF', async () => {
     const res = await auth(request(app).post('/api/shelf')).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('crea el libro y la relación con el usuario', async () => {
+    const res = await auth(request(app).post('/api/shelf'), true).send({
       title: 'Dune',
       author: 'Frank Herbert',
     });
@@ -64,14 +78,17 @@ describe('POST /api/shelf', () => {
   });
 
   it('responde 400 si falta título o autor', async () => {
-    const res = await auth(request(app).post('/api/shelf')).send({ title: 'Solo título' });
+    const res = await auth(request(app).post('/api/shelf'), true).send({ title: 'Solo título' });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 
   it('es idempotente: añadir el mismo libro dos veces no lo duplica', async () => {
-    await auth(request(app).post('/api/shelf')).send({ title: 'Dune', author: 'Frank Herbert' });
-    const second = await auth(request(app).post('/api/shelf')).send({
+    await auth(request(app).post('/api/shelf'), true).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
+    const second = await auth(request(app).post('/api/shelf'), true).send({
       title: 'Dune',
       author: 'Frank Herbert',
     });
@@ -83,14 +100,28 @@ describe('POST /api/shelf', () => {
   });
 
   it('dos usuarios distintos pueden tener el mismo libro en su estantería', async () => {
-    await auth(request(app).post('/api/shelf')).send({ title: 'Dune', author: 'Frank Herbert' });
+    await auth(request(app).post('/api/shelf'), true).send({
+      title: 'Dune',
+      author: 'Frank Herbert',
+    });
 
     const other = await request(app)
       .post('/api/auth/register')
       .send({ email: 'other@test.com', password: 'password123' });
     const res = await request(app)
       .post('/api/shelf')
-      .set('Authorization', `Bearer ${other.body.token}`)
+      .set('Cookie', other.headers['set-cookie'])
+      .set(
+        'X-CSRF-Token',
+        decodeURIComponent(
+          other.headers['set-cookie']
+            .find((cookie: string) => cookie.startsWith('biblioteca.csrf='))
+            .split(';', 1)[0]
+            .split('=')
+            .slice(1)
+            .join('='),
+        ),
+      )
       .send({ title: 'Dune', author: 'Frank Herbert' });
 
     expect(res.status).toBe(201);
@@ -100,12 +131,12 @@ describe('POST /api/shelf', () => {
 
 describe('PATCH /api/shelf/:id', () => {
   it('actualiza estado, valoración, reseña y notas', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({
+    const created = await auth(request(app).post('/api/shelf'), true).send({
       title: 'Dune',
       author: 'Frank Herbert',
     });
 
-    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`)).send({
+    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`), true).send({
       status: 'READ',
       rating: 5,
       review: 'Excelente',
@@ -122,7 +153,7 @@ describe('PATCH /api/shelf/:id', () => {
   });
 
   it('responde 404 si el userBook es de otro usuario', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({
+    const created = await auth(request(app).post('/api/shelf'), true).send({
       title: 'Dune',
       author: 'Frank Herbert',
     });
@@ -133,19 +164,32 @@ describe('PATCH /api/shelf/:id', () => {
 
     const res = await request(app)
       .patch(`/api/shelf/${created.body.id}`)
-      .set('Authorization', `Bearer ${other.body.token}`)
+      .set('Cookie', other.headers['set-cookie'])
+      .set(
+        'X-CSRF-Token',
+        decodeURIComponent(
+          other.headers['set-cookie']
+            .find((cookie: string) => cookie.startsWith('biblioteca.csrf='))
+            .split(';', 1)[0]
+            .split('=')
+            .slice(1)
+            .join('='),
+        ),
+      )
       .send({ status: 'READ' });
 
     expect(res.status).toBe(404);
   });
 
   it('rechaza una valoración fuera del rango permitido', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({
+    const created = await auth(request(app).post('/api/shelf'), true).send({
       title: 'Dune',
       author: 'Frank Herbert',
     });
 
-    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`)).send({ rating: 6 });
+    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`), true).send({
+      rating: 6,
+    });
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
@@ -153,24 +197,24 @@ describe('PATCH /api/shelf/:id', () => {
   });
 
   it('rechaza una actualización sin campos', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({
+    const created = await auth(request(app).post('/api/shelf'), true).send({
       title: 'Dune',
       author: 'Frank Herbert',
     });
 
-    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`)).send({});
+    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`), true).send({});
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
   });
 
   it('rechaza un estado de lectura desconocido', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({
+    const created = await auth(request(app).post('/api/shelf'), true).send({
       title: 'Dune',
       author: 'Frank Herbert',
     });
 
-    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`)).send({
+    const res = await auth(request(app).patch(`/api/shelf/${created.body.id}`), true).send({
       status: 'UNKNOWN',
     });
 
@@ -181,12 +225,12 @@ describe('PATCH /api/shelf/:id', () => {
 
 describe('DELETE /api/shelf/:id', () => {
   it('elimina el libro de la estantería', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({
+    const created = await auth(request(app).post('/api/shelf'), true).send({
       title: 'Dune',
       author: 'Frank Herbert',
     });
 
-    const del = await auth(request(app).delete(`/api/shelf/${created.body.id}`));
+    const del = await auth(request(app).delete(`/api/shelf/${created.body.id}`), true);
     expect(del.status).toBe(204);
 
     const shelf = await auth(request(app).get('/api/shelf'));
@@ -194,7 +238,7 @@ describe('DELETE /api/shelf/:id', () => {
   });
 
   it('responde 404 si el userBook es de otro usuario', async () => {
-    const created = await auth(request(app).post('/api/shelf')).send({
+    const created = await auth(request(app).post('/api/shelf'), true).send({
       title: 'Dune',
       author: 'Frank Herbert',
     });
@@ -203,9 +247,18 @@ describe('DELETE /api/shelf/:id', () => {
       .post('/api/auth/register')
       .send({ email: 'other@test.com', password: 'password123' });
 
+    const otherCookies = other.headers['set-cookie'];
+    const otherCsrfCookie = otherCookies.find((cookie: string) =>
+      cookie.startsWith('biblioteca.csrf='),
+    );
+    if (!otherCsrfCookie) throw new Error('CSRF cookie was not set');
+    const otherCsrfToken = decodeURIComponent(
+      otherCsrfCookie.split(';', 1)[0].split('=').slice(1).join('='),
+    );
     const res = await request(app)
       .delete(`/api/shelf/${created.body.id}`)
-      .set('Authorization', `Bearer ${other.body.token}`);
+      .set('Cookie', otherCookies)
+      .set('X-CSRF-Token', otherCsrfToken);
 
     expect(res.status).toBe(404);
   });
