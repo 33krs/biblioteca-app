@@ -50,14 +50,14 @@ The Docker runtime and integration tests currently use `prisma db push --accept-
   - Replace production and test `db push` flows with `prisma migrate deploy` against guarded databases.
   - Preserve and verify the two existing migrations.
   - Checks: both migrations applied to empty PostgreSQL 18.6; second deploy reported no pending migrations; backend 6 files/49 tests passed; full quality passed; CI no longer uses `db push`.
-  - Commit: pending creation (`chore(db): deploy committed migrations`).
-  - RDD: pending.
-- [ ] **DB-03 — Add readiness and graceful shutdown**
+  - Commit: `77f5076` (`chore(db): deploy committed migrations`).
+  - RDD: unavailable; assessment failed safely because untracked implementation files required an inventory declaration. Review remains due.
+- [x] **DB-03 — Add readiness and graceful shutdown**
   - Route: delegated direct; writer trigger applies across backend runtime, tests, and Compose health checks.
   - Keep `/api/health` as liveness; add `/api/ready` with a lightweight database probe and `503` failure behavior.
   - Disconnect Prisma during SIGINT/SIGTERM shutdown.
-  - Checks: readiness success/failure tests, backend build, container health behavior.
-  - Commit: pending.
+  - Checks: four health/readiness tests passed; backend build passed; Docker backend became healthy; liveness returned `200` and readiness returned `503` with PostgreSQL stopped, then readiness recovered to `200` after restart.
+  - Commit: pending creation (`feat(api): add database readiness checks`).
   - RDD: pending.
 - [ ] **DB-04 — Validate the complete upgrade path**
   - Route: inline verification; no source writer is planned unless verification identifies a defect.
@@ -80,4 +80,4 @@ The Docker runtime and integration tests currently use `prisma db push --accept-
 - Current branch: `chore/production-database-readiness`.
 - PostgreSQL official release evidence: 18.6 is stable; PostgreSQL 19 Beta 4 is not production-ready.
 - Existing migrations: `20260906020329_init` and `20260906092325_add_password_reset_token`.
-- Next step: commit DB-02 and complete DB-03.
+- Next step: commit DB-03 and complete DB-04 verification.
