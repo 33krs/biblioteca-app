@@ -36,7 +36,7 @@ The existing mailer logs password-reset links to the server console. That is acc
 
 ## Tasks
 
-- [ ] P3-01 — Define the mail adapter and production configuration validation with focused tests.
+- [x] P3-01 — Define the mail adapter and production configuration validation with focused tests.
   - Route: delegated direct.
   - Trigger evidence: mailer and startup configuration are separate non-trivial files; mapping spans 4+ files.
   - Checks: observed RED/GREEN tests; backend typecheck and build.
@@ -68,8 +68,9 @@ The existing mailer logs password-reset links to the server console. That is acc
 
 * The first focused route run required escalated local listener permission; the rerun passed.
 * Full npm run quality subsequently passed: formatting, lint, both typechecks, 63 backend tests, 27 frontend tests, and both builds. PostgreSQL was available for this run.
-* Strict TDD evidence gap: P3-01 GREEN passed, but its initial RED command was blocked by Prisma P1001 before tests executed; this is recorded rather than treated as genuine RED evidence.
+* Strict TDD exception: the user explicitly authorized closing P3-01 with its initial RED blocked by Prisma P1001 before tests executed. The focused GREEN and full quality evidence passed; the exception is not retroactive RED evidence.
+* P3-03 work-unit commit: d62f443 (docs(mail): document Resend production configuration).
 
 ## Next Step
 
-Resolve the P3-01 RED-evidence gap or explicitly record the strict-TDD exception before declaring the phase complete.
+Phase implementation is complete locally. Await explicit remote authorization for push and pull request creation.
