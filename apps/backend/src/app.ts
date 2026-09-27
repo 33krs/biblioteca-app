@@ -7,6 +7,7 @@ import shelfRouter from './routes/shelf.js';
 import booksRouter from './routes/googleBooks.js';
 import authRouter from './routes/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { checkDatabaseReadiness, type ReadinessProbe } from './readiness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,7 +21,7 @@ const allowedOrigins = new Set(
   ),
 );
 
-export function createApp() {
+export function createApp(readinessProbe: ReadinessProbe = checkDatabaseReadiness) {
   const app = express();
 
   app.use(helmet());
@@ -39,6 +40,14 @@ export function createApp() {
   app.use('/api/shelf', shelfRouter);
   app.use('/api/books', booksRouter);
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  app.get('/api/ready', async (_req, res) => {
+    try {
+      await readinessProbe();
+      res.status(200).json({ ok: true });
+    } catch {
+      res.status(503).json({ ok: false });
+    }
+  });
   app.use(errorHandler);
 
   return app;
