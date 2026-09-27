@@ -52,7 +52,9 @@ describe('sendPasswordResetEmail', () => {
       NODE_ENV: 'development',
     });
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('http://localhost/reset?resetToken=local'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('http://localhost/reset?resetToken=local'),
+    );
     expect(sendMock).not.toHaveBeenCalled();
   });
 

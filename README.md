@@ -62,12 +62,14 @@ compose up`, define `JWT_SECRET` en tu shell o en un `.env` junto a
   válido y no expiró, actualiza la contraseña, lo invalida y revoca las
   sesiones existentes.
 
-Hoy no hay ningún proveedor de email conectado: el link de reseteo se loguea
-en la consola del backend (`apps/backend/src/lib/mailer.ts`). Para producción
-hay que reemplazar esa función por un envío real (Resend, SendGrid, SMTP...);
-las rutas no cambian. El frontend arma la pantalla de "nueva contraseña" leyendo
-`?resetToken=...` de la URL (`FRONTEND_URL` en `apps/backend/.env` controla el
-dominio con el que se arma ese link).
+En desarrollo, el link de reseteo se loguea en la consola del backend
+(`apps/backend/src/lib/mailer.ts`). En producción se envía mediante Resend:
+`RESEND_API_KEY` y `MAIL_FROM` son obligatorias y el backend falla antes de
+escuchar conexiones si falta alguna. `MAIL_FROM` debe ser un remitente verificado
+en Resend. Los fallos del proveedor no revelan si la cuenta existe ni registran
+el link, el token o la respuesta del proveedor. El frontend arma la pantalla de
+"nueva contraseña" leyendo `?resetToken=...` de la URL (`FRONTEND_URL` en
+`apps/backend/.env` controla el dominio con el que se arma ese link).
 
 ## Búsqueda con Google Books
 
@@ -134,6 +136,8 @@ cp .env.example .env
 - `POSTGRES_PASSWORD` y `JWT_SECRET` son obligatorios y no tienen valores
   predeterminados.
 - `FRONTEND_URL` usa `http://localhost:8080` de forma predeterminada.
+- `RESEND_API_KEY` y `MAIL_FROM` son obligatorias para el backend de producción
+  ejecutado por Docker Compose.
 
 No confirmes `.env` ni respaldos de bases de datos en Git.
 

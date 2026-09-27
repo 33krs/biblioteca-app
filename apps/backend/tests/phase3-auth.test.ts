@@ -60,7 +60,9 @@ describe('POST /api/auth/forgot-password', () => {
       .post('/api/auth/forgot-password')
       .send({ email: 'missing@example.com' });
     mocks.sendPasswordResetEmail.mockRejectedValueOnce(
-      new Error('provider secret PROVIDER_KEY resetToken=token-from-provider https://secret.example'),
+      new Error(
+        'provider secret PROVIDER_KEY resetToken=token-from-provider https://secret.example',
+      ),
     );
 
     const failed = await request(app)
@@ -75,13 +77,13 @@ describe('POST /api/auth/forgot-password', () => {
   });
 
   it('logs only a request id when the mail provider fails', async () => {
-    const error = new Error('provider secret PROVIDER_KEY resetToken=token-from-provider https://secret.example');
+    const error = new Error(
+      'provider secret PROVIDER_KEY resetToken=token-from-provider https://secret.example',
+    );
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mocks.sendPasswordResetEmail.mockRejectedValueOnce(error);
 
-    await request(app)
-      .post('/api/auth/forgot-password')
-      .send({ email: existingUser.email });
+    await request(app).post('/api/auth/forgot-password').send({ email: existingUser.email });
 
     const output = errorSpy.mock.calls.flat().map(String).join(' ');
     expect(output).toMatch(/requestId=[0-9a-f-]{36}/);
