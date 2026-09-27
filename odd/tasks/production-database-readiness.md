@@ -44,27 +44,27 @@ The Docker runtime and integration tests currently use `prisma db push --accept-
   - Include `.gitignore` in this configuration work unit.
   - Checks: Compose config passed; PostgreSQL 18.6 image pulled; verified backup SHA-256 `7c453d0752323b04bdc27c52cdaafcc563620373a88ff3592bf529e0b7bfc004`; both `pgdata` and `pgdata18` volumes preserved; documentation formatted.
   - Commit: `bea29f7` (`chore(db): prepare PostgreSQL 18 upgrade`).
-  - RDD: unavailable; assessment failed safely because concurrent untracked implementation files changed the declared inventory. Review remains due.
+  - RDD: approved as part of lineage `review-6441dbc9c5c05b31`.
 - [x] **DB-02 — Make migrations authoritative**
   - Route: delegated direct; writer trigger applies across Docker startup, test setup, CI, and scripts.
   - Replace production and test `db push` flows with `prisma migrate deploy` against guarded databases.
   - Preserve and verify the two existing migrations.
   - Checks: both migrations applied to empty PostgreSQL 18.6; second deploy reported no pending migrations; backend 6 files/49 tests passed; full quality passed; CI no longer uses `db push`.
   - Commit: `77f5076` (`chore(db): deploy committed migrations`).
-  - RDD: unavailable; assessment failed safely because untracked implementation files required an inventory declaration. Review remains due.
+  - RDD: approved as part of lineage `review-6441dbc9c5c05b31`.
 - [x] **DB-03 — Add readiness and graceful shutdown**
   - Route: delegated direct; writer trigger applies across backend runtime, tests, and Compose health checks.
   - Keep `/api/health` as liveness; add `/api/ready` with a lightweight database probe and `503` failure behavior.
   - Disconnect Prisma during SIGINT/SIGTERM shutdown.
   - Checks: four health/readiness tests passed; backend build passed; Docker backend became healthy; liveness returned `200` and readiness returned `503` with PostgreSQL stopped, then readiness recovered to `200` after restart.
-  - Commit: pending creation (`feat(api): add database readiness checks`).
-  - RDD: pending.
-- [ ] **DB-04 — Validate the complete upgrade path**
+  - Commit: `d5d1923` (`feat(api): add database readiness checks`).
+  - RDD: approved as part of lineage `review-6441dbc9c5c05b31`.
+- [x] **DB-04 — Validate the complete upgrade path**
   - Route: inline verification; no source writer is planned unless verification identifies a defect.
   - Restore or initialize PostgreSQL 18, deploy migrations twice, run all quality checks, and smoke-test health/readiness.
-  - Checks: `npm run quality`, Docker Compose health, schema status, data-count validation.
-  - Commit: pending if documentation evidence changes.
-  - RDD: pending.
+  - Checks: `npm run quality` passed; backend 49 tests and frontend 27 tests passed; both builds passed; Docker images built; PostgreSQL, backend, and frontend started successfully; migration deployment was idempotent; liveness/readiness smoke tests passed including database outage and recovery.
+  - Commit: `docs(odd): close production database readiness` (final hash recorded in Git history).
+  - RDD: passive (`non_executable_only`); no additional review required.
 
 ## Acceptance criteria
 
@@ -80,4 +80,6 @@ The Docker runtime and integration tests currently use `prisma db push --accept-
 - Current branch: `chore/production-database-readiness`.
 - PostgreSQL official release evidence: 18.6 is stable; PostgreSQL 19 Beta 4 is not production-ready.
 - Existing migrations: `20260906020329_init` and `20260906092325_add_password_reset_token`.
-- Next step: commit DB-03 and complete DB-04 verification.
+- Running authored change count before this final evidence update: 349 lines.
+- Native review: approved and acknowledged for target `sha256:375d5ddc5e36df0190567e6554eccda6786eb6470fdc46970849db5aa27af023`.
+- Next step: await explicit authorization for any push or pull request.
