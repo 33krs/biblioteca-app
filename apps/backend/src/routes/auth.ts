@@ -148,7 +148,11 @@ router.post(
 
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const resetUrl = `${frontendUrl}/?resetToken=${token}`;
-      await sendPasswordResetEmail(user.email, resetUrl);
+      try {
+        await sendPasswordResetEmail(user.email, resetUrl);
+      } catch {
+        console.error(`password_reset_email_failed requestId=${crypto.randomUUID()}`);
+      }
     }
 
     res.json(genericResponse);

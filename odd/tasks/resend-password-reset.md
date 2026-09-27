@@ -34,7 +34,7 @@ The existing mailer logs password-reset links to the server console. That is acc
   - Route: delegated direct.
   - Trigger evidence: mailer and startup configuration are separate non-trivial files; mapping spans 4+ files.
   - Checks: observed RED/GREEN tests; backend typecheck and build.
-- [ ] P3-02 — Wire Resend delivery and safe error logging into the existing reset flow.
+- [x] P3-02 — Wire Resend delivery and safe error logging into the existing reset flow.
   - Route: delegated direct.
   - Trigger evidence: auth route plus mailer behavior are two non-trivial files.
   - Checks: observed RED/GREEN tests; verify neutral response and secret-free logs.
@@ -50,6 +50,10 @@ The existing mailer logs password-reset links to the server console. That is acc
 - Strict TDD enabled.
 - P3-01 implementation is present in the mail adapter/config boundary with 5 focused tests passing under a temporary no-database Vitest config.
 - Backend typecheck passed. The normal backend test command remains pending because Prisma globalSetup cannot connect to PostgreSQL on localhost:5433.
+- P3-01 work-unit commit: 71b4aa1 (feat(mail): add Resend password reset adapter).
+- Native review assessment was high-risk but unavailable: untracked local .atl/.codegraph artifacts required inventory, and the prescribed read-only status preflight failed safely because the filesystem was read-only.
+- P3-02 implementation passed backend build and 11 focused Phase 3 tests (mail adapter, route neutrality, and startup validation) using a temporary no-database Vitest config; the temporary config was removed.
+- The normal backend suite remains pending because PostgreSQL is unavailable at localhost:5433. The first focused route run also required escalated local listener permission; the rerun passed.
 
 ## Next Step
-Commit P3-01 as a work unit, then establish RED/GREEN for P3-02 route neutrality and startup validation.
+Commit P3-02 as a work unit, then document environment variables and run the full applicable quality checks.
