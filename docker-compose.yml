@@ -16,6 +16,8 @@ services:
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en tu entorno o en un archivo .env junto a docker-compose.yml}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      RESEND_API_KEY: ${RESEND_API_KEY:?Define RESEND_API_KEY en tu entorno o en un archivo .env junto a docker-compose.yml}
+      MAIL_FROM: ${MAIL_FROM:?Define MAIL_FROM en tu entorno o en un archivo .env junto a docker-compose.yml}
     depends_on:
       db:
         condition: service_healthy
