@@ -1,20 +1,19 @@
 import type { UserBook, NewBookPayload, GoogleBookResult } from '../types';
-import { getToken } from './token';
 import { useAuthStore } from '../store/useAuthStore';
+import { addCsrfHeader } from './csrf';
 
 const BASE = '/api/shelf';
 
-// Adjunta el token a las rutas de /api/shelf (requieren sesión) y, si el
-// backend responde 401 (token ausente, inválido o expirado), cierra la
-// sesión local para que la UI vuelva a la pantalla de login.
+// Envía las cookies de sesión a las rutas autenticadas y adjunta el token CSRF
+// sólo a las mutaciones. Una respuesta 401 descarta el estado local para que
+// la UI vuelva a la pantalla de login.
 async function authedFetch(input: string, init: RequestInit = {}): Promise<Response> {
-  const token = getToken();
   const headers = new Headers(init.headers);
-  if (token) headers.set('Authorization', `Bearer ${token}`);
+  addCsrfHeader(headers, init.method);
 
-  const res = await fetch(input, { ...init, headers });
+  const res = await fetch(input, { ...init, headers, credentials: 'include' });
   if (res.status === 401) {
-    useAuthStore.getState().logout();
+    useAuthStore.setState({ user: null });
   }
   return res;
 }

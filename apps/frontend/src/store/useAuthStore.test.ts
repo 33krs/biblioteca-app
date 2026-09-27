@@ -9,68 +9,55 @@ const user: AuthUser = { id: 'u1', email: 'a@test.com', name: 'Ana' };
 
 beforeEach(() => {
   vi.resetAllMocks();
-  localStorage.clear();
   useAuthStore.setState({ user: null, ready: false, error: null });
 });
 
 describe('hydrate', () => {
-  it('sin token guardado, queda listo sin usuario', async () => {
-    await useAuthStore.getState().hydrate();
-
-    expect(useAuthStore.getState().user).toBeNull();
-    expect(useAuthStore.getState().ready).toBe(true);
-  });
-
-  it('con token guardado válido, recupera el usuario', async () => {
-    localStorage.setItem('biblioteca.token', 'valid-token');
+  it('recupera el usuario desde la sesión por cookie', async () => {
     vi.mocked(authApi.fetchMe).mockResolvedValue(user);
 
     await useAuthStore.getState().hydrate();
 
-    expect(authApi.fetchMe).toHaveBeenCalledWith('valid-token');
+    expect(authApi.fetchMe).toHaveBeenCalledWith();
     expect(useAuthStore.getState().user).toEqual(user);
     expect(useAuthStore.getState().ready).toBe(true);
   });
 
-  it('con token guardado inválido, limpia la sesión', async () => {
-    localStorage.setItem('biblioteca.token', 'expired-token');
+  it('queda listo sin usuario si no existe una sesión válida', async () => {
     vi.mocked(authApi.fetchMe).mockRejectedValue(new Error('Sesión inválida'));
 
     await useAuthStore.getState().hydrate();
 
     expect(useAuthStore.getState().user).toBeNull();
-    expect(localStorage.getItem('biblioteca.token')).toBeNull();
+    expect(useAuthStore.getState().ready).toBe(true);
   });
 });
 
 describe('login', () => {
-  it('guarda el token y el usuario', async () => {
-    vi.mocked(authApi.login).mockResolvedValue({ token: 'tok', user });
+  it('guarda sólo el usuario en el estado de la aplicación', async () => {
+    vi.mocked(authApi.login).mockResolvedValue({ user });
 
     await useAuthStore.getState().login('a@test.com', 'password123');
 
-    expect(localStorage.getItem('biblioteca.token')).toBe('tok');
     expect(useAuthStore.getState().user).toEqual(user);
   });
 
-  it('propaga el error sin guardar nada si falla', async () => {
+  it('propaga el error si falla', async () => {
     vi.mocked(authApi.login).mockRejectedValue(new Error('Email o contraseña incorrectos'));
 
     await expect(useAuthStore.getState().login('a@test.com', 'mala')).rejects.toThrow(
       'Email o contraseña incorrectos',
     );
     expect(useAuthStore.getState().user).toBeNull();
-    expect(localStorage.getItem('biblioteca.token')).toBeNull();
   });
 });
 
 describe('register', () => {
-  it('guarda el token y el usuario', async () => {
-    vi.mocked(authApi.register).mockResolvedValue({ token: 'tok', user });
+  it('guarda el usuario en el estado de la aplicación', async () => {
+    vi.mocked(authApi.register).mockResolvedValue({ user });
 
     await useAuthStore.getState().register('a@test.com', 'password123', 'Ana');
 
-    expect(localStorage.getItem('biblioteca.token')).toBe('tok');
     expect(useAuthStore.getState().user).toEqual(user);
   });
 });
@@ -87,13 +74,13 @@ describe('forgotPassword', () => {
 });
 
 describe('logout', () => {
-  it('borra el token y el usuario', () => {
-    localStorage.setItem('biblioteca.token', 'tok');
+  it('solicita el cierre de sesión y limpia el usuario local', async () => {
+    vi.mocked(authApi.logout).mockResolvedValue(undefined);
     useAuthStore.setState({ user });
 
-    useAuthStore.getState().logout();
+    await useAuthStore.getState().logout();
 
-    expect(localStorage.getItem('biblioteca.token')).toBeNull();
+    expect(authApi.logout).toHaveBeenCalledWith(null);
     expect(useAuthStore.getState().user).toBeNull();
   });
 });
