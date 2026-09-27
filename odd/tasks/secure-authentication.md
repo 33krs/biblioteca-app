@@ -56,7 +56,7 @@ The frontend persists a JWT in `localStorage` and sends it in an `Authorization`
   - Route: inline verification; no source writer unless a check identifies a defect.
   - Run migration, focused auth/shelf tests, and the full quality gate; record observed results.
   - Evidence: `npm run quality` passed; 52 backend tests and 28 frontend tests passed; backend and frontend builds passed; migration `20260927114500_add_session_version` applied successfully.
-  - Commit: pending closure commit.
+  - Commit: `f97bb74` (`docs(odd): close secure authentication`).
   - RDD: high-risk assessment; native preflight was unavailable because the review store could not complete its intended-untracked selection for local `.atl/` and `.codegraph/` artifacts. The user confirmed those artifacts should be excluded.
 
 ## Acceptance criteria
