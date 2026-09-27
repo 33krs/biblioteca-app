@@ -27,6 +27,7 @@ export function createApp(readinessProbe: ReadinessProbe = checkDatabaseReadines
   app.use(helmet());
   app.use(
     cors({
+      credentials: true,
       origin(origin, callback) {
         if (!origin || allowedOrigins.has(origin)) return callback(null, true);
         callback(new Error('Origen no permitido por CORS'));

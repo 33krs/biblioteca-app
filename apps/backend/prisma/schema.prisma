@@ -12,6 +12,7 @@ model User {
   email                String     @unique
   name                 String?
   passwordHash         String?
+  sessionVersion       Int        @default(0)
   resetTokenHash       String?    @unique
   resetTokenExpiresAt  DateTime?
   books                UserBook[]

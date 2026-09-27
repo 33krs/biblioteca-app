@@ -35,16 +35,22 @@ biblioteca-app/
 La app es multiusuario: hay que registrarse/iniciar sesión para ver y editar
 tu propia estantería (cada usuario solo ve y modifica sus propios libros).
 
-- `POST /api/auth/register` — `{ email, password, name? }` → `{ token, user }`
-- `POST /api/auth/login` — `{ email, password }` → `{ token, user }`
-- `GET /api/auth/me` — con `Authorization: Bearer <token>`, devuelve el usuario
+- `POST /api/auth/register` — `{ email, password, name? }` → `{ user }`
+- `POST /api/auth/login` — `{ email, password }` → `{ user }`
+- `POST /api/auth/logout` — cierra la sesión actual
+- `GET /api/auth/me` — devuelve el usuario de la sesión actual
 
-El token es un JWT (7 días de expiración) que el frontend guarda en
-`localStorage` y envía en cada petición a `/api/shelf/*`. Hace falta definir
-`JWT_SECRET` en `apps/backend/.env` (ver `.env.example` para generar uno) —
-sin esa variable el backend no arranca. Si usas `docker compose up`, define
-`JWT_SECRET` en tu shell o en un `.env` junto a `docker-compose.yml` (sin
-key, `docker compose` se niega a levantar el servicio `backend`).
+La sesión usa un JWT de siete días en una cookie `HttpOnly`, limitada a `/api`,
+con `SameSite=Lax` y `Secure` en producción. El frontend no guarda credenciales
+en `localStorage`. El backend entrega además una cookie CSRF legible por el
+frontend; las operaciones autenticadas `POST`, `PATCH` y `DELETE` deben enviar
+su valor en el encabezado `X-CSRF-Token`.
+
+Hace falta definir `JWT_SECRET` en `apps/backend/.env` (ver `.env.example`
+para generar uno) — sin esa variable el backend no arranca. Si usas `docker
+compose up`, define `JWT_SECRET` en tu shell o en un `.env` junto a
+`docker-compose.yml` (sin key, `docker compose` se niega a levantar el servicio
+`backend`).
 
 ### Recuperación de contraseña
 
@@ -53,7 +59,8 @@ key, `docker compose` se niega a levantar el servicio `backend`).
   mismo mensaje, exista o no la cuenta, para no filtrar qué emails están
   registrados.
 - `POST /api/auth/reset-password` — `{ token, password }` → si el token es
-  válido y no expiró, actualiza la contraseña y lo invalida.
+  válido y no expiró, actualiza la contraseña, lo invalida y revoca las
+  sesiones existentes.
 
 Hoy no hay ningún proveedor de email conectado: el link de reseteo se loguea
 en la consola del backend (`apps/backend/src/lib/mailer.ts`). Para producción

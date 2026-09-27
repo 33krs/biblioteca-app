@@ -1,8 +1,15 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { prisma } from '../prismaClient.js';
-import { requireAuth, signToken, type AuthedRequest } from '../middleware/auth.js';
+import {
+  requireAuth,
+  SESSION_COOKIE_NAME,
+  SESSION_MAX_AGE_MS,
+  signToken,
+  type AuthedRequest,
+} from '../middleware/auth.js';
+import { createCsrfToken, CSRF_COOKIE_NAME, requireCsrf } from '../middleware/csrf.js';
 import { sendPasswordResetEmail } from '../lib/mailer.js';
 import { authLimiter, loginLimiter, forgotPasswordLimiter } from '../middleware/rateLimit.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
@@ -30,7 +37,32 @@ function toPublicUser(user: { id: string; email: string; name: string | null }) 
   return { id: user.id, email: user.email, name: user.name };
 }
 
-// POST /api/auth/register - crea una cuenta y devuelve un token
+function cookieOptions(httpOnly: boolean) {
+  return {
+    httpOnly,
+    maxAge: SESSION_MAX_AGE_MS,
+    path: '/api',
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+  };
+}
+
+function establishSession(res: Response, user: { id: string; sessionVersion: number }) {
+  res.cookie(SESSION_COOKIE_NAME, signToken(user.id, user.sessionVersion), cookieOptions(true));
+  res.cookie(CSRF_COOKIE_NAME, createCsrfToken(), cookieOptions(false));
+}
+
+function clearSession(res: Response) {
+  const options = {
+    path: '/api',
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+  };
+  res.clearCookie(SESSION_COOKIE_NAME, { ...options, httpOnly: true });
+  res.clearCookie(CSRF_COOKIE_NAME, { ...options, httpOnly: false });
+}
+
+// POST /api/auth/register - crea una cuenta y establece una sesión por cookie
 router.post(
   '/register',
   authLimiter,
@@ -59,11 +91,12 @@ router.post(
       },
     });
 
-    res.status(201).json({ token: signToken(user.id), user: toPublicUser(user) });
+    establishSession(res, user);
+    res.status(201).json({ user: toPublicUser(user) });
   }),
 );
 
-// POST /api/auth/login - valida credenciales y devuelve un token
+// POST /api/auth/login - valida credenciales y establece una sesión por cookie
 router.post(
   '/login',
   loginLimiter,
@@ -80,7 +113,8 @@ router.post(
       return res.status(401).json({ error: 'Email o contraseña incorrectos' });
     }
 
-    res.json({ token: signToken(user.id), user: toPublicUser(user) });
+    establishSession(res, user);
+    res.json({ user: toPublicUser(user) });
   }),
 );
 
@@ -145,12 +179,22 @@ router.post(
     const passwordHash = await bcrypt.hash(password, 10);
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash, resetTokenHash: null, resetTokenExpiresAt: null },
+      data: {
+        passwordHash,
+        resetTokenHash: null,
+        resetTokenExpiresAt: null,
+        sessionVersion: { increment: 1 },
+      },
     });
 
     res.json({ message: 'Contraseña actualizada' });
   }),
 );
+
+router.post('/logout', requireAuth, requireCsrf, (_req, res) => {
+  clearSession(res);
+  res.status(204).end();
+});
 
 // GET /api/auth/me - devuelve el usuario del token, para rehidratar sesión
 router.get(
