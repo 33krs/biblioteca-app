@@ -28,32 +28,36 @@ The frontend persists a JWT in `localStorage` and sends it in an `Authorization`
 
 - Delivery strategy: `ask-on-risk`.
 - Forecast: approximately 360 authored changed lines, excluding generated files.
+- Chain strategy: `feature-branch-chain`, confirmed by the user after the implementation exceeded the review-size guideline.
 - TDD: disabled; no explicit project or session TDD configuration exists. Focused and full checks remain required.
 - Test runner: Vitest through `npm run test:backend` and `npm run test:frontend`; full gate `npm run quality`.
 - RDD: enabled by global configuration; assess each work-unit commit with the native review command.
 
 ## Tasks
 
-- [ ] **AUTH-01 — Establish cookie sessions and server-side CSRF enforcement**
+- [x] **AUTH-01 — Establish cookie sessions and server-side CSRF enforcement**
 
   - Route: inline because delegation tooling is unavailable in this runtime; mapping trigger evidence: backend auth, middleware, app setup, schema, migration, and tests span more than four files.
   - Add `sessionVersion` with a committed Prisma migration.
   - Read session JWTs from an HttpOnly cookie and validate the embedded session version against the user record.
   - Set session and CSRF cookies on registration/login, add logout, require matching CSRF header for authenticated mutations, and increment the session version after password reset.
   - Checks: focused backend auth/shelf tests, Prisma migration deployment, backend build.
+  - Commit: `6e20c34` (`feat(auth): secure cookie sessions and CSRF`).
 
-- [ ] **AUTH-02 — Migrate the frontend to credentialed cookie requests**
+- [x] **AUTH-02 — Migrate the frontend to credentialed cookie requests**
 
   - Route: inline because delegation tooling is unavailable in this runtime; writer trigger evidence: auth client, shelf API client, auth store, token removal, and frontend tests are non-trivial files.
   - Remove local token persistence and bearer headers.
   - Send credentialed requests, attach the CSRF header to authenticated mutations, and make logout call the API.
   - Checks: focused frontend auth-store/API tests, frontend build.
+  - Commit: `362a65a` (`feat(auth): use credentialed browser sessions`).
 
-- [ ] **AUTH-03 — Verify secure-session behavior and close the delivery**
+- [x] **AUTH-03 — Verify secure-session behavior and close the delivery**
   - Route: inline verification; no source writer unless a check identifies a defect.
   - Run migration, focused auth/shelf tests, and the full quality gate; record observed results.
-  - Commit: pending.
-  - RDD: pending native assessment.
+  - Evidence: `npm run quality` passed; 52 backend tests and 28 frontend tests passed; backend and frontend builds passed; migration `20260927114500_add_session_version` applied successfully.
+  - Commit: pending closure commit.
+  - RDD: high-risk assessment; native preflight was unavailable because the review store could not complete its intended-untracked selection for local `.atl/` and `.codegraph/` artifacts. The user confirmed those artifacts should be excluded.
 
 ## Acceptance criteria
 
@@ -67,4 +71,6 @@ The frontend persists a JWT in `localStorage` and sends it in an `Authorization`
 ## Progress and evidence
 
 - Branch: `feat/secure-authentication`, created from merged `origin/main` commit `9330b9a`.
-- Next step: implement AUTH-01.
+- Slice 1: `6e20c34` backend session, CSRF, migration, tests, documentation, and task tracker.
+- Slice 2: `362a65a` frontend credentialed requests, CSRF header handling, token removal, and tests.
+- Next step: publish the feature branch and open the chained PR sequence only after explicit authorization.
