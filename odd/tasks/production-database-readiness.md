@@ -43,14 +43,14 @@ The Docker runtime and integration tests currently use `prisma db push --accept-
   - Add safe backup, restore, fresh-volume, and rollback instructions.
   - Include `.gitignore` in this configuration work unit.
   - Checks: Compose config passed; PostgreSQL 18.6 image pulled; verified backup SHA-256 `7c453d0752323b04bdc27c52cdaafcc563620373a88ff3592bf529e0b7bfc004`; both `pgdata` and `pgdata18` volumes preserved; documentation formatted.
-  - Commit: pending creation (`chore(db): prepare PostgreSQL 18 upgrade`).
-  - RDD: pending.
-- [ ] **DB-02 — Make migrations authoritative**
+  - Commit: `bea29f7` (`chore(db): prepare PostgreSQL 18 upgrade`).
+  - RDD: unavailable; assessment failed safely because concurrent untracked implementation files changed the declared inventory. Review remains due.
+- [x] **DB-02 — Make migrations authoritative**
   - Route: delegated direct; writer trigger applies across Docker startup, test setup, CI, and scripts.
   - Replace production and test `db push` flows with `prisma migrate deploy` against guarded databases.
   - Preserve and verify the two existing migrations.
-  - Checks: empty-database deploy, idempotent deploy, backend tests, CI configuration review.
-  - Commit: pending.
+  - Checks: both migrations applied to empty PostgreSQL 18.6; second deploy reported no pending migrations; backend 6 files/49 tests passed; full quality passed; CI no longer uses `db push`.
+  - Commit: pending creation (`chore(db): deploy committed migrations`).
   - RDD: pending.
 - [ ] **DB-03 — Add readiness and graceful shutdown**
   - Route: delegated direct; writer trigger applies across backend runtime, tests, and Compose health checks.
@@ -80,4 +80,4 @@ The Docker runtime and integration tests currently use `prisma db push --accept-
 - Current branch: `chore/production-database-readiness`.
 - PostgreSQL official release evidence: 18.6 is stable; PostgreSQL 19 Beta 4 is not production-ready.
 - Existing migrations: `20260906020329_init` and `20260906092325_add_password_reset_token`.
-- Next step: commit DB-01 and complete DB-02.
+- Next step: commit DB-02 and complete DB-03.
