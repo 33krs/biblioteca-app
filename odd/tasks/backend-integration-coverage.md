@@ -48,8 +48,8 @@ The change should be delivered only with reproducible local verification and a r
 ## Progress
 
 - T1: complete — `node_modules/.bin/prettier` and its target lacked executable bits; the tracked-file diffs were CRLF-only and `.atl/`/`.codegraph/` are local generated artifacts.
-- T2: complete — full quality suite passes against PostgreSQL 18.6 via the temporary local socket `/tmp/biblioteca-pg-socket`.
-- T3: complete — committed as `7463528` (`fix(test): provide frontend storage in vitest`) and `ac90b3c` (`chore(odd): record verification evidence`); generated artifacts remain untracked and excluded.
+- T2: complete — full quality suite passes against PostgreSQL 18.6 running healthy in Docker on `localhost:5433`.
+- T3: complete — committed as `7463528` (`fix(test): provide frontend storage in vitest`), `ac90b3c` (`chore(odd): record verification evidence`), and `5a7f5e5` (`chore(odd): record passing quality suite`); generated artifacts remain untracked and excluded.
 
 ## Verification Evidence
 
@@ -58,9 +58,9 @@ The change should be delivered only with reproducible local verification and a r
 - `npm run typecheck` — passed.
 - `npm run test:frontend` — passed: 6 files, 27 tests.
 - `npm run build` — passed: backend TypeScript build and frontend Vite build.
-- `npm run test:backend` — passed with the temporary PostgreSQL socket: 6 files, 46 tests.
-- `DATABASE_URL=postgresql://...&host=/tmp/biblioteca-pg-socket npm run quality` — passed: backend 46 tests, frontend 27 tests, build complete.
+- `npm run test:backend` — passed against Docker PostgreSQL: 6 files, 46 tests.
+- `npm run quality` — passed against Docker PostgreSQL: backend 46 tests, frontend 27 tests, format, lint, typecheck, and build complete.
 
 ## Next Step
 
-Next external step: configure a persistent PostgreSQL/Docker service outside the restricted runtime; the implementation and full quality suite are verified.
+Next external step: review the branch and open the PR when ready.
