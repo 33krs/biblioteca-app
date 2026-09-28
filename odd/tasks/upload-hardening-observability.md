@@ -64,7 +64,7 @@ The current cover upload trusts the original filename extension, uses predictabl
 - P4-02 implementation completed locally: UUID request IDs are propagated via `X-Request-ID`, safe structured error/info logs omit query strings and error bodies, and JSON errors include stable codes plus `requestId`.
 - TDD evidence: RED observed with 3 failing observability tests; GREEN observed with 3 focused tests and 77 backend tests passing; REFACTOR completed by centralizing request IDs and error responses.
 - A lint failure from unused caught upstream errors was corrected by using bindingless `catch` blocks; final `npm run lint` passed.
-- P4-02 work-unit commit identity: pending until commit creation.
+- P4-02 work-unit commit identity: `16c7cac` (`feat(observability): correlate backend errors`).
 
 ## Next Step
 
