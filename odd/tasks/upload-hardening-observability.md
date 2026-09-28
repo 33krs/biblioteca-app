@@ -59,7 +59,7 @@ The current cover upload trusts the original filename extension, uses predictabl
 - TDD evidence: RED observed with the replacement-cleanup test failing; GREEN observed with 74 backend tests passing (12 files); REFACTOR completed by extracting the bounded custom-cover URL schema.
 - Verification: `npm run typecheck:backend` passed; `npm run build:backend` passed; `git diff --check` passed.
 - PostgreSQL test database was started in local Docker using ephemeral test credentials; no project secret files were changed.
-- Commit identity: `a713f4b` (`feat(uploads): harden cover file handling`).
+- Commit identity: `4d09fab` (`feat(uploads): harden cover file handling`).
 
 ## Next Step
 
