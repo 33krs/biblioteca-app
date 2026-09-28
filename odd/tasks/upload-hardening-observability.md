@@ -39,10 +39,10 @@ The current cover upload trusts the original filename extension, uses predictabl
   - Route: delegated direct.
   - Trigger evidence: upload route, storage handling, app static serving, and tests span 4+ files.
   - Checks: strict TDD RED/GREEN/REFACTOR observed; `npm run test:backend` passed (74 tests); backend typecheck/build passed.
-- [ ] P4-02 — Add request correlation, safe structured logs, and normalized backend errors.
+- [x] P4-02 — Add request correlation, safe structured logs, and normalized backend errors.
   - Route: delegated direct.
   - Trigger evidence: middleware, app wiring, route error paths, and tests are non-trivial files.
-  - Checks: TDD mode resolution; error/log tests; backend checks.
+  - Checks: strict TDD RED/GREEN/REFACTOR observed; focused observability tests passed (3 tests); `npm run test:backend` passed (77 tests); lint, backend typecheck/build, and `git diff --check` passed.
 - [ ] P4-03 — Surface recoverable errors and retries in the frontend; document and verify.
   - Route: delegated direct.
   - Trigger evidence: API client, store/components, tests, and docs are non-trivial files.
@@ -61,7 +61,11 @@ The current cover upload trusts the original filename extension, uses predictabl
 - PostgreSQL test database was started in local Docker using ephemeral test credentials; no project secret files were changed.
 - Commit identity: `4d09fab` (`feat(uploads): harden cover file handling`).
 - Review assessment: native assessment classified the committed range as high risk but could not proceed because the negotiated read-only review status failed on the repository filesystem; review remains unavailable and no review authority was granted.
+- P4-02 implementation completed locally: UUID request IDs are propagated via `X-Request-ID`, safe structured error/info logs omit query strings and error bodies, and JSON errors include stable codes plus `requestId`.
+- TDD evidence: RED observed with 3 failing observability tests; GREEN observed with 3 focused tests and 77 backend tests passing; REFACTOR completed by centralizing request IDs and error responses.
+- A lint failure from unused caught upstream errors was corrected by using bindingless `catch` blocks; final `npm run lint` passed.
+- P4-02 work-unit commit identity: pending until commit creation.
 
 ## Next Step
 
-Establish RED for P4-02 request IDs, safe structured logs, and normalized JSON errors.
+Review and commit P4-02 as one work unit, then establish RED for P4-03 frontend recovery and retry UX.

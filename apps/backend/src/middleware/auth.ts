@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import type { NextFunction, Request, Response } from 'express';
 import { prisma } from '../prismaClient.js';
 import { readCookie } from './csrf.js';
+import { sendError } from './errorResponse.js';
 
 export const SESSION_COOKIE_NAME = 'biblioteca.session';
 export const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -23,7 +24,7 @@ export function signToken(userId: string, sessionVersion: number): string {
 export async function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
   const token = readCookie(req, SESSION_COOKIE_NAME);
   if (!token) {
-    return res.status(401).json({ error: 'No autenticado' });
+    return sendError(res, 401, 'No autenticado', 'AUTHENTICATION_REQUIRED');
   }
 
   try {
@@ -41,6 +42,6 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
     req.userId = payload.sub;
     next();
   } catch {
-    return res.status(401).json({ error: 'Token inválido o expirado' });
+    return sendError(res, 401, 'Token inválido o expirado', 'INVALID_SESSION');
   }
 }

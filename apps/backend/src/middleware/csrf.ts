@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
+import { sendError } from './errorResponse.js';
 
 export const CSRF_COOKIE_NAME = 'biblioteca.csrf';
 export const CSRF_HEADER_NAME = 'x-csrf-token';
@@ -35,7 +36,7 @@ export function requireCsrf(req: Request, res: Response, next: NextFunction) {
   const headerToken = req.get(CSRF_HEADER_NAME);
 
   if (!cookieToken || !headerToken) {
-    return res.status(403).json({ error: 'CSRF token missing or invalid' });
+    return sendError(res, 403, 'CSRF token missing or invalid', 'CSRF_INVALID');
   }
 
   const cookieBuffer = Buffer.from(cookieToken);
@@ -44,7 +45,7 @@ export function requireCsrf(req: Request, res: Response, next: NextFunction) {
     cookieBuffer.length !== headerBuffer.length ||
     !crypto.timingSafeEqual(cookieBuffer, headerBuffer)
   ) {
-    return res.status(403).json({ error: 'CSRF token missing or invalid' });
+    return sendError(res, 403, 'CSRF token missing or invalid', 'CSRF_INVALID');
   }
 
   next();

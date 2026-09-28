@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { logRequestError, logSafeEvent, sendError } from '../middleware/errorResponse.js';
 import { searchBooksQuerySchema } from '../schemas/books.js';
 
 const router = Router();
@@ -107,29 +108,35 @@ router.get(
     if (!q.trim()) return res.json([]);
 
     try {
-      console.log(`[books] buscando en Google Books: "${q}"`);
+      logSafeEvent('info', 'book_search', { requestId: res.locals.requestId, provider: 'google_books' });
       const results = await searchGoogleBooks(q);
-      console.log(`[books] Google Books devolvió ${results.length} resultados`);
+      logSafeEvent('info', 'book_search_complete', {
+        requestId: res.locals.requestId,
+        provider: 'google_books',
+        resultCount: results.length,
+      });
       return res.json(results);
-    } catch (err) {
-      console.error(
-        `[books] Google Books falló: ${err instanceof Error ? err.message : String(err)}`,
-      );
+    } catch {
+      logRequestError(req, res, 502, 'UPSTREAM_ERROR', { provider: 'google_books' });
     }
 
     try {
-      console.log(`[books] intentando con Open Library: "${q}"`);
+      logSafeEvent('info', 'book_search', { requestId: res.locals.requestId, provider: 'open_library' });
       const results = await searchOpenLibrary(q);
-      console.log(`[books] Open Library devolvió ${results.length} resultados`);
-      return res.json(results);
-    } catch (err) {
-      console.error(
-        `[books] Open Library también falló: ${err instanceof Error ? err.message : String(err)}`,
-      );
-      return res.status(502).json({
-        error:
-          'No se pudo contactar a Google Books ni a Open Library. Revisa la conexión a internet del contenedor backend.',
+      logSafeEvent('info', 'book_search_complete', {
+        requestId: res.locals.requestId,
+        provider: 'open_library',
+        resultCount: results.length,
       });
+      return res.json(results);
+    } catch {
+      logRequestError(req, res, 502, 'UPSTREAM_ERROR', { provider: 'open_library' });
+      return sendError(
+        res,
+        502,
+        'No se pudo contactar a Google Books ni a Open Library. Revisa la conexión a internet del contenedor backend.',
+        'UPSTREAM_ERROR',
+      );
     }
   }),
 );
