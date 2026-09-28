@@ -60,6 +60,7 @@ The current cover upload trusts the original filename extension, uses predictabl
 - Verification: `npm run typecheck:backend` passed; `npm run build:backend` passed; `git diff --check` passed.
 - PostgreSQL test database was started in local Docker using ephemeral test credentials; no project secret files were changed.
 - Commit identity: `4d09fab` (`feat(uploads): harden cover file handling`).
+- Review assessment: native assessment classified the committed range as high risk but could not proceed because the negotiated read-only review status failed on the repository filesystem; review remains unavailable and no review authority was granted.
 
 ## Next Step
 
