@@ -65,7 +65,8 @@ The current cover upload trusts the original filename extension, uses predictabl
 - TDD evidence: RED observed with 3 failing observability tests; GREEN observed with 3 focused tests and 77 backend tests passing; REFACTOR completed by centralizing request IDs and error responses.
 - A lint failure from unused caught upstream errors was corrected by using bindingless `catch` blocks; final `npm run lint` passed.
 - P4-02 work-unit commit identity: `16c7cac` (`feat(observability): correlate backend errors`).
+- P4-02 review assessment: native assessment remained high risk but unavailable because the review index could not be created on the repository's read-only filesystem; preflight status also failed safely, so no review authority was granted.
 
 ## Next Step
 
-Review and commit P4-02 as one work unit, then establish RED for P4-03 frontend recovery and retry UX.
+Establish RED for P4-03 frontend recovery and retry UX.
