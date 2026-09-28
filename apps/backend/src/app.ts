@@ -35,7 +35,14 @@ export function createApp(readinessProbe: ReadinessProbe = checkDatabaseReadines
     }),
   );
   app.use(express.json());
-  app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+  app.use(
+    '/uploads',
+    express.static(path.join(__dirname, '..', 'uploads'), {
+      setHeaders(response) {
+        response.setHeader('X-Content-Type-Options', 'nosniff');
+      },
+    }),
+  );
 
   app.use('/api/auth', authRouter);
   app.use('/api/shelf', shelfRouter);
