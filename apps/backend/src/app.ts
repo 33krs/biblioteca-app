@@ -7,6 +7,7 @@ import shelfRouter from './routes/shelf.js';
 import booksRouter from './routes/googleBooks.js';
 import authRouter from './routes/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { requestId } from './middleware/requestId.js';
 import { checkDatabaseReadiness, type ReadinessProbe } from './readiness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,7 @@ const allowedOrigins = new Set(
 export function createApp(readinessProbe: ReadinessProbe = checkDatabaseReadiness) {
   const app = express();
 
+  app.use(requestId);
   app.use(helmet());
   app.use(
     cors({
@@ -35,7 +37,14 @@ export function createApp(readinessProbe: ReadinessProbe = checkDatabaseReadines
     }),
   );
   app.use(express.json());
-  app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+  app.use(
+    '/uploads',
+    express.static(path.join(__dirname, '..', 'uploads'), {
+      setHeaders(response) {
+        response.setHeader('X-Content-Type-Options', 'nosniff');
+      },
+    }),
+  );
 
   app.use('/api/auth', authRouter);
   app.use('/api/shelf', shelfRouter);

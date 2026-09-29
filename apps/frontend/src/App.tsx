@@ -62,6 +62,7 @@ function Library({ onLogout }: { onLogout: () => void }) {
     uploadCover,
     loading,
     error,
+    retry,
   } = useLibraryStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -94,7 +95,22 @@ function Library({ onLogout }: { onLogout: () => void }) {
         <FilterTabs value={filter} onChange={setFilter} />
 
         {loading && <p className="font-sans text-muted">Cargando estantería...</p>}
-        {error && <p className="font-sans text-red-300">{error}</p>}
+        {error && (
+          <div className="font-sans rounded border p-4 text-red-200 border-oxblood" role="alert">
+            <p>{error.message}</p>
+            {error.requestId && (
+              <p className="mt-1 text-xs text-muted">ID de solicitud: {error.requestId}</p>
+            )}
+            {retry && (
+              <button
+                onClick={() => void retry()}
+                className="mt-3 rounded border px-3 py-1.5 text-sm border-red-300"
+              >
+                Reintentar
+              </button>
+            )}
+          </div>
+        )}
 
         {!loading && !error && (
           <ShelfView books={filtered} onSelect={setSelectedId} onAdd={() => setAddOpen(true)} />

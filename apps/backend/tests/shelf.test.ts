@@ -1,8 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { readdir, rm } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 
 const app = createApp();
+const uploadsDirectory = fileURLToPath(new URL('../uploads', import.meta.url));
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const JPEG_SIGNATURE = Buffer.from([0xff, 0xd8, 0xff, 0xdb]);
 
 let cookies: string[];
 let csrfToken: string;
@@ -15,6 +21,15 @@ beforeEach(async () => {
   const csrfCookie = cookies.find((cookie) => cookie.startsWith('biblioteca.csrf='));
   if (!csrfCookie) throw new Error('CSRF cookie was not set');
   csrfToken = decodeURIComponent(csrfCookie.split(';', 1)[0].split('=').slice(1).join('='));
+});
+
+afterEach(async () => {
+  const entries = await readdir(uploadsDirectory);
+  await Promise.all(
+    entries
+      .filter((entry) => entry !== '.gitkeep')
+      .map((entry) => rm(path.join(uploadsDirectory, entry), { force: true })),
+  );
 });
 
 function auth<T extends request.Test>(req: T, csrf = false): T {
@@ -261,5 +276,90 @@ describe('DELETE /api/shelf/:id', () => {
       .set('X-CSRF-Token', otherCsrfToken);
 
     expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/shelf/:id/cover', () => {
+  async function createShelfItem(title = 'Dune') {
+    return auth(request(app).post('/api/shelf'), true)
+      .send({ title, author: 'Frank Herbert' })
+      .then((response) => response.body);
+  }
+
+  async function uploadCover(id: string, file: Buffer, filename: string) {
+    return auth(request(app).post(`/api/shelf/${id}/cover`), true).attach('cover', file, filename);
+  }
+
+  async function uploadedFiles() {
+    return (await readdir(uploadsDirectory)).filter((entry) => entry !== '.gitkeep');
+  }
+
+  it('accepts a PNG by signature and assigns a UUID filename with its server-controlled extension', async () => {
+    const item = await createShelfItem();
+
+    const res = await uploadCover(item.id, PNG_SIGNATURE, 'untrusted-name.txt');
+
+    expect(res.status).toBe(200);
+    expect(res.body.customCoverUrl).toMatch(
+      /^\/uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.png$/,
+    );
+    expect(await uploadedFiles()).toEqual([res.body.customCoverUrl.replace('/uploads/', '')]);
+  });
+
+  it('rejects files without an allowed image signature and removes them', async () => {
+    const item = await createShelfItem();
+
+    const res = await uploadCover(item.id, Buffer.from('not an image'), 'cover.png');
+
+    expect(res.status).toBe(400);
+    expect(await uploadedFiles()).toEqual([]);
+  });
+
+  it('rejects uploads larger than 5 MiB and leaves no file behind', async () => {
+    const item = await createShelfItem();
+    const oversizedPng = Buffer.concat([PNG_SIGNATURE, Buffer.alloc(5 * 1024 * 1024)]);
+
+    const res = await uploadCover(item.id, oversizedPng, 'cover.png');
+
+    expect(res.status).toBe(413);
+    expect(await uploadedFiles()).toEqual([]);
+  });
+
+  it('removes a saved upload when the requested shelf item is not owned', async () => {
+    const res = await uploadCover('missing-id', JPEG_SIGNATURE, 'cover.jpg');
+
+    expect(res.status).toBe(404);
+    expect(await uploadedFiles()).toEqual([]);
+  });
+
+  it('deletes the previous server-owned cover only after its replacement succeeds', async () => {
+    const item = await createShelfItem();
+    const firstUpload = await uploadCover(item.id, PNG_SIGNATURE, 'first-cover.png');
+    expect(firstUpload.status).toBe(200);
+
+    const res = await uploadCover(item.id, JPEG_SIGNATURE, 'cover.png');
+
+    expect(res.status).toBe(200);
+    expect(await uploadedFiles()).toEqual([res.body.customCoverUrl.replace('/uploads/', '')]);
+  });
+
+  it('rejects client-supplied upload URLs and preserves another shelf item cover', async () => {
+    const firstItem = await createShelfItem('Dune');
+    const secondItem = await createShelfItem('Foundation');
+    const firstUpload = await uploadCover(firstItem.id, PNG_SIGNATURE, 'first-cover.png');
+    expect(firstUpload.status).toBe(200);
+
+    const patch = await auth(request(app).patch(`/api/shelf/${secondItem.id}`), true).send({
+      customCoverUrl: firstUpload.body.customCoverUrl,
+    });
+    expect(patch.status).toBe(400);
+
+    const secondUpload = await uploadCover(secondItem.id, JPEG_SIGNATURE, 'second-cover.jpg');
+    expect(secondUpload.status).toBe(200);
+    expect(await uploadedFiles()).toEqual(
+      [firstUpload.body.customCoverUrl, secondUpload.body.customCoverUrl]
+        .map((url) => url.replace('/uploads/', ''))
+        .sort(),
+    );
   });
 });

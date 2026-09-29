@@ -20,7 +20,6 @@ export const updateShelfItemSchema = z
     rating: z.number().int().min(1).max(5).nullable().optional(),
     review: optionalText,
     notes: optionalText,
-    customCoverUrl: optionalUrl,
   })
   .refine((value) => Object.keys(value).length > 0, {
     error: 'Debes enviar al menos un campo para actualizar',
