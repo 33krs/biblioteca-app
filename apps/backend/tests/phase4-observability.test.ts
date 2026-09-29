@@ -43,6 +43,8 @@ describe('Phase 4 request observability', () => {
 
     const logs = [...info.mock.calls, ...error.mock.calls].map(([entry]) => String(entry));
     expect(logs.join('\n')).not.toContain(privateQuery);
-    expect(logs.every((entry) => expect(() => JSON.parse(entry)).not.toThrow())).toBe(true);
+    for (const entry of logs) {
+      expect(() => JSON.parse(entry)).not.toThrow();
+    }
   });
 });

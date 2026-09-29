@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { readdir, rm, writeFile } from 'node:fs/promises';
+import { readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import request from 'supertest';
@@ -280,9 +280,9 @@ describe('DELETE /api/shelf/:id', () => {
 });
 
 describe('POST /api/shelf/:id/cover', () => {
-  async function createShelfItem() {
+  async function createShelfItem(title = 'Dune') {
     return auth(request(app).post('/api/shelf'), true)
-      .send({ title: 'Dune', author: 'Frank Herbert' })
+      .send({ title, author: 'Frank Herbert' })
       .then((response) => response.body);
   }
 
@@ -332,17 +332,34 @@ describe('POST /api/shelf/:id/cover', () => {
     expect(await uploadedFiles()).toEqual([]);
   });
 
-  it('deletes the previous custom cover only after its replacement succeeds', async () => {
+  it('deletes the previous server-owned cover only after its replacement succeeds', async () => {
     const item = await createShelfItem();
-    const oldCoverName = 'previous-cover.png';
-    await writeFile(path.join(uploadsDirectory, oldCoverName), PNG_SIGNATURE);
-    await auth(request(app).patch(`/api/shelf/${item.id}`), true).send({
-      customCoverUrl: `/uploads/${oldCoverName}`,
-    });
+    const firstUpload = await uploadCover(item.id, PNG_SIGNATURE, 'first-cover.png');
+    expect(firstUpload.status).toBe(200);
 
     const res = await uploadCover(item.id, JPEG_SIGNATURE, 'cover.png');
 
     expect(res.status).toBe(200);
     expect(await uploadedFiles()).toEqual([res.body.customCoverUrl.replace('/uploads/', '')]);
+  });
+
+  it('rejects client-supplied upload URLs and preserves another shelf item cover', async () => {
+    const firstItem = await createShelfItem('Dune');
+    const secondItem = await createShelfItem('Foundation');
+    const firstUpload = await uploadCover(firstItem.id, PNG_SIGNATURE, 'first-cover.png');
+    expect(firstUpload.status).toBe(200);
+
+    const patch = await auth(request(app).patch(`/api/shelf/${secondItem.id}`), true).send({
+      customCoverUrl: firstUpload.body.customCoverUrl,
+    });
+    expect(patch.status).toBe(400);
+
+    const secondUpload = await uploadCover(secondItem.id, JPEG_SIGNATURE, 'second-cover.jpg');
+    expect(secondUpload.status).toBe(200);
+    expect(await uploadedFiles()).toEqual(
+      [firstUpload.body.customCoverUrl, secondUpload.body.customCoverUrl]
+        .map((url) => url.replace('/uploads/', ''))
+        .sort(),
+    );
   });
 });

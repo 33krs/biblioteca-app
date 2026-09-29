@@ -143,10 +143,10 @@ router.patch(
     const owned = await findOwnedUserBook(id, req.userId!);
     if (!owned) return res.status(404).json({ error: 'No encontrado' });
 
-    const { status, rating, review, notes, customCoverUrl } = req.body;
+    const { status, rating, review, notes } = req.body;
     const userBook = await prisma.userBook.update({
       where: { id },
-      data: { status, rating, review, notes, customCoverUrl },
+      data: { status, rating, review, notes },
       include: { book: true },
     });
 
