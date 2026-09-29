@@ -39,12 +39,13 @@ The approved review left warnings for stale frontend retry state, unchecked API 
   - Route: delegated direct.
   - Trigger evidence: API client, Zustand store, and their test files are non-trivial changes; mapping covered four files.
   - Checks: strict TDD RED (5 focused failures reported by delegated writer; raw transcript not retained), GREEN, and REFACTOR; `npm run test:frontend` passed (7 files, 33 tests); `npm run typecheck:frontend` and `npm run build:frontend` passed; `git diff --check` passed.
-  - Work-unit commit identity: pending.
-- [ ] RA-02 — Treat obsolete-cover cleanup as recoverable after a committed replacement.
+  - Work-unit commit identity: `5c50a4d` (`fix(frontend): clear stale recovery state`).
+  - Native RDD assessment: medium, reason `executable_change`; outcome `under budget` (171 authored lines). Review deferred within the slice; continue to assess subsequent commits against this reviewed boundary.
+- [x] RA-02 — Treat obsolete-cover cleanup as recoverable after a committed replacement.
   - Route: delegated direct.
   - Trigger evidence: upload route and backend shelf tests are non-trivial changes.
-  - Checks: strict TDD RED/GREEN/REFACTOR; `npm run test:backend`; backend typecheck/build.
-  - Commit: pending.
+  - Checks: delegated RED observed (`500` instead of expected `200`); GREEN and REFACTOR; `npm run test:backend` passed (13 files, 79 tests); `npm run typecheck:backend`, `npm run build:backend`, and `git diff --check` passed. Initial sandbox access to PostgreSQL was denied; rerun with approved local DB access passed.
+  - Work-unit commit identity: pending.
 - [ ] RA-03 — Preserve safe diagnostics for unexpected backend errors.
   - Route: delegated direct.
   - Trigger evidence: error middleware and observability tests are non-trivial changes.
@@ -57,8 +58,8 @@ The approved review left warnings for stale frontend retry state, unchecked API 
 - New local branch: `fix/phase4-review-advisories`.
 - Local `.atl/` and `.codegraph/` artifacts remain untracked and must not be included.
 - Read-only mapping completed with CodeGraph and a delegated explorer. Seven warnings group into four behavior areas: duplicate stale-retry findings, API payload validation, duplicate post-commit cleanup findings, and generic error diagnostics.
-- RA-01 is implemented and verified locally; its work-unit commit and subsequent tasks remain pending.
+- RA-01 and RA-02 are implemented and verified locally; RA-03 remains pending.
 
 ## Next Step
 
-Implement RA-02 using strict TDD, then update and mirror this tracker with observed evidence.
+Implement RA-03 using strict TDD, then update and mirror this tracker with observed evidence.

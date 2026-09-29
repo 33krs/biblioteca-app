@@ -8,6 +8,7 @@ import { prisma } from '../prismaClient.js';
 import { requireAuth, type AuthedRequest } from '../middleware/auth.js';
 import { requireCsrf } from '../middleware/csrf.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { logSafeEvent } from '../middleware/errorResponse.js';
 import { validateBody } from '../middleware/validate.js';
 import { createShelfItemSchema, updateShelfItemSchema } from '../schemas/shelf.js';
 
@@ -206,7 +207,11 @@ router.post(
         throw error;
       });
 
-    await removeCustomCover(owned.customCoverUrl);
+    try {
+      await removeCustomCover(owned.customCoverUrl);
+    } catch {
+      logSafeEvent('error', 'cover_cleanup_failed', { resource: 'obsolete_cover' });
+    }
 
     res.json(userBook);
   }),
