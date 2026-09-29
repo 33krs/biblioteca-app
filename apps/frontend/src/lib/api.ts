@@ -30,8 +30,7 @@ async function apiError(response: Response, fallback: string): Promise<ApiError>
   return new ApiError(
     nonEmptyString(payload.error) ?? fallback,
     nonEmptyString(payload.code),
-    nonEmptyString(payload.requestId) ??
-      nonEmptyString(response.headers.get('X-Request-ID')),
+    nonEmptyString(payload.requestId) ?? nonEmptyString(response.headers.get('X-Request-ID')),
   );
 }
 
