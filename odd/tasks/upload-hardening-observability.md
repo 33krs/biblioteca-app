@@ -22,7 +22,9 @@ The current cover upload trusts the original filename extension, uses predictabl
 - Add request IDs, structured safe logs, and JSON errors with requestId.
 - Never log bodies, credentials, cookies, tokens, or private links.
 - Conventional commits only; no Co-Authored-By.
-+ TDD mode: strict, explicitly authorized by the user. Test runners: npm run test:backend and npm run test:frontend; record observed RED/GREEN/REFACTOR evidence.
+
+* TDD mode: strict, explicitly authorized by the user. Test runners: npm run test:backend and npm run test:frontend; record observed RED/GREEN/REFACTOR evidence.
+
 - Delivery strategy: ask-on-risk. Forecast: ~350 authored changed lines; one PR slice expected.
 
 ## Acceptance Criteria
@@ -43,10 +45,10 @@ The current cover upload trusts the original filename extension, uses predictabl
   - Route: delegated direct.
   - Trigger evidence: middleware, app wiring, route error paths, and tests are non-trivial files.
   - Checks: strict TDD RED/GREEN/REFACTOR observed; focused observability tests passed (3 tests); `npm run test:backend` passed (77 tests); lint, backend typecheck/build, and `git diff --check` passed.
-- [ ] P4-03 — Surface recoverable errors and retries in the frontend; document and verify.
+- [x] P4-03 — Surface recoverable errors and retries in the frontend; document and verify.
   - Route: delegated direct.
   - Trigger evidence: API client, store/components, tests, and docs are non-trivial files.
-  - Checks: TDD mode resolution; frontend tests; npm run quality; review assessment.
+  - Checks: strict TDD RED/GREEN/REFACTOR observed; focused API/store tests passed (6 tests); frontend tests passed (28 tests); `npm run quality` passed.
 
 ## Progress and Evidence
 
@@ -66,7 +68,11 @@ The current cover upload trusts the original filename extension, uses predictabl
 - A lint failure from unused caught upstream errors was corrected by using bindingless `catch` blocks; final `npm run lint` passed.
 - P4-02 work-unit commit identity: `16c7cac` (`feat(observability): correlate backend errors`).
 - P4-02 review assessment: native assessment remained high risk but unavailable because the review index could not be created on the repository's read-only filesystem; preflight status also failed safely, so no review authority was granted.
+- P4-03 implementation completed locally: API errors preserve backend `code` and `requestId`, library state retains a retry action, the library error banner exposes a retry control, and the detail panel keeps failed actions open with local retry feedback.
+- TDD evidence: RED observed with API request-ID parsing and recoverable store-error tests failing; GREEN observed with 6 focused tests and 28 frontend tests passing; REFACTOR completed by centralizing typed API errors and retry state.
+- Full quality initially found Prettier drift in prior P4 backend routes and the tracker; formatting was normalized and the final `npm run quality` passed.
+- P4-03 work-unit commit identity: pending until commit creation.
 
 ## Next Step
 
-Establish RED for P4-03 frontend recovery and retry UX.
+Review and commit P4-03 as one work unit, then complete the prepared native review with explicit user consent.

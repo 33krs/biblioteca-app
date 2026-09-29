@@ -21,7 +21,14 @@ function makeUserBook(overrides: Partial<UserBook> = {}): UserBook {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  useLibraryStore.setState({ books: [], loading: false, error: null, filter: 'ALL', query: '' });
+  useLibraryStore.setState({
+    books: [],
+    loading: false,
+    error: null,
+    retry: null,
+    filter: 'ALL',
+    query: '',
+  });
 });
 
 describe('load', () => {
@@ -41,7 +48,11 @@ describe('load', () => {
     await useLibraryStore.getState().load();
 
     expect(useLibraryStore.getState().books).toEqual([]);
-    expect(useLibraryStore.getState().error).toBe('No se pudo cargar la estantería');
+    expect(useLibraryStore.getState().error).toMatchObject({
+      message: 'No se pudo cargar la estantería',
+      requestId: null,
+    });
+    expect((useLibraryStore.getState() as { retry?: unknown }).retry).toEqual(expect.any(Function));
     expect(useLibraryStore.getState().loading).toBe(false);
   });
 });

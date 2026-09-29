@@ -1,14 +1,20 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { Star, X, Upload, ImageOff } from 'lucide-react';
 import type { UserBook, ReadingStatus } from '../types';
 import { hashColor, handwrittenSize, STATUS_CONFIG } from '../lib/covers';
+import { ApiError } from '../lib/api';
 
 interface Props {
   userBook: UserBook;
   onClose: () => void;
-  onSave: (patch: Partial<UserBook>) => void;
-  onDelete: () => void;
-  onUploadCover: (file: File) => void;
+  onSave: (patch: Partial<UserBook>) => Promise<void>;
+  onDelete: () => Promise<void>;
+  onUploadCover: (file: File) => Promise<void>;
+}
+
+interface ActionError {
+  message: string;
+  requestId: string | null;
 }
 
 export default function BookDetailPanel({
@@ -23,19 +29,41 @@ export default function BookDetailPanel({
   const [rating, setRating] = useState(userBook.rating ?? 0);
   const [review, setReview] = useState(userBook.review ?? '');
   const [notes, setNotes] = useState(userBook.notes ?? '');
+  const [actionError, setActionError] = useState<ActionError | null>(null);
+  const [retry, setRetry] = useState<(() => Promise<void>) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const coverUrl = userBook.customCoverUrl || book.defaultCoverUrl;
   const color = hashColor(book.title);
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  function showError(error: unknown, action: () => Promise<void>) {
+    setActionError({
+      message: error instanceof Error ? error.message : 'No se pudo completar la acción',
+      requestId: error instanceof ApiError ? error.requestId : null,
+    });
+    setRetry(() => action);
+  }
+
+  async function runAction(action: () => Promise<void>) {
+    try {
+      await action();
+      setActionError(null);
+      setRetry(null);
+    } catch (error) {
+      showError(error, action);
+    }
+  }
+
+  function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) onUploadCover(file);
+    if (file) void runAction(() => onUploadCover(file));
   }
 
   function save() {
-    onSave({ status, rating, review, notes });
-    onClose();
+    void runAction(async () => {
+      await onSave({ status, rating, review, notes });
+      onClose();
+    });
   }
 
   return (
@@ -89,13 +117,30 @@ export default function BookDetailPanel({
           </button>
           {userBook.customCoverUrl && (
             <button
-              onClick={() => onSave({ customCoverUrl: null })}
+              onClick={() => void runAction(() => onSave({ customCoverUrl: null }))}
               className="font-sans px-3 py-1.5 rounded border text-xs flex items-center gap-1 border-border text-muted"
             >
               <ImageOff size={13} /> Quitar
             </button>
           )}
         </div>
+
+        {actionError && (
+          <div
+            className="mb-6 rounded border p-3 font-sans text-sm text-red-200 border-oxblood"
+            role="alert"
+          >
+            <p>{actionError.message}</p>
+            {actionError.requestId && (
+              <p className="mt-1 text-xs text-muted">ID de solicitud: {actionError.requestId}</p>
+            )}
+            {retry && (
+              <button onClick={() => void runAction(retry)} className="mt-2 text-xs underline">
+                Reintentar
+              </button>
+            )}
+          </div>
+        )}
 
         <p className="font-label text-xs mb-2 text-muted">Estado de lectura</p>
         <div className="flex gap-2 mb-6">
@@ -151,7 +196,7 @@ export default function BookDetailPanel({
             Guardar
           </button>
           <button
-            onClick={onDelete}
+            onClick={() => void runAction(onDelete)}
             className="font-sans px-4 py-2 rounded text-sm border border-oxblood text-red-300"
           >
             Eliminar
