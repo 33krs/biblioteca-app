@@ -71,7 +71,7 @@ The current cover upload trusts the original filename extension, uses predictabl
 - P4-03 implementation completed locally: API errors preserve backend `code` and `requestId`, library state retains a retry action, the library error banner exposes a retry control, and the detail panel keeps failed actions open with local retry feedback.
 - TDD evidence: RED observed with API request-ID parsing and recoverable store-error tests failing; GREEN observed with 6 focused tests and 28 frontend tests passing; REFACTOR completed by centralizing typed API errors and retry state.
 - Full quality initially found Prettier drift in prior P4 backend routes and the tracker; formatting was normalized and the final `npm run quality` passed.
-- P4-03 work-unit commit identity: pending until commit creation.
+- P4-03 work-unit commit identity: `31c4c1f` (`feat(frontend): add retryable API errors`).
 
 ## Next Step
 
