@@ -37,24 +37,24 @@ GitHub reported PR #9 as `DIRTY`, while local `origin/main` was stale and its fi
   - Route: direct delivery of PR9-01's verified work unit.
   - Acceptance: remote branch contains the resolution commit; PR remains open and is not merged; report latest status checks/reviews.
   - Checks: remote branch SHA and PR metadata read-back.
-  - Evidence: fast-forward push succeeded (no force-push). GitHub read-back: PR `OPEN`, `CLEAN`, `mergedAt: null`, head `e71b758fc386d9851a67b3a6d41ee06202b6a87a`, base `e866d4d6da5d1692aae38efcf3ab6a26acd60e28`; `quality` completed successfully; no reviews returned.
-  - Commit identity: `e71b758` records tracker and delivery evidence; resolution work-unit is `cbe4c1d`.
+  - Evidence: fast-forward pushes succeeded (no force-push). Final GitHub read-back after tracker commits: PR `OPEN`, `mergedAt: null`, head pending final tracker push; `quality` is running; no reviews returned. The earlier synced head was `e71b758fc386d9851a67b3a6d41ee06202b6a87a`, where `quality` succeeded and PR state was `CLEAN`.
+  - Commit identity: `cbe4c1d` is the resolution work unit; `e71b758`, `53d23a6`, and `4ed21e7` record tracker/delivery evidence.
 
 - Completion-tracker commit `53d23a6` was assessed against `e866d4d` with local-only untracked artifacts explicitly excluded: medium, `under_budget`, 335 changed lines; no review was due.
 
 ## Progress and Evidence
 
-- PR branch now has merge commit `cbe4c1d` (`chore(merge): sync advisory PR with main`) with `origin/main` `e866d4d` as second parent, followed by tracker commit `e71b758`; both were pushed fast-forward.
+- PR branch now has merge commit `cbe4c1d` (`chore(merge): sync advisory PR with main`) with `origin/main` `e866d4d` as second parent, followed by tracker commits `e71b758`, `53d23a6`, and `4ed21e7`; all were pushed fast-forward.
 - Local `origin/main` before the authorized fetch: `6aeb34e1b08d85b601f4476d88aa7f7cae747572`; its last local fetch was 2026-09-27.
-- Initial GitHub state was PR #9 `DIRTY`, open, with no reviews/checks. Latest post-push read-back shows PR `OPEN`, `CLEAN`, unmerged, with `quality` successful and no reviews returned.
-- Authorized `git fetch origin main` refreshed `origin/main` to `e866d4d6da5d1692aae38efcf3ab6a26acd60e28`; pushed PR head is `e71b758fc386d9851a67b3a6d41ee06202b6a87a`.
+- Initial GitHub state was PR #9 `DIRTY`, open, with no reviews/checks. At `e71b758`, PR was `OPEN`, `CLEAN`, unmerged, with `quality` successful and no reviews returned. A later tracker-only push triggered a fresh CI run; the latest read-back was `OPEN`, `UNSTABLE`, unmerged, `quality IN_PROGRESS`, no reviews.
+- Authorized `git fetch origin main` refreshed `origin/main` to `e866d4d6da5d1692aae38efcf3ab6a26acd60e28`; the latest pushed PR head at the time of documentation is `4ed21e74b827a40ba4b49d40b08da5c6023df783`.
 - Three-way merge preview against refreshed refs identified conflicts in `apps/backend/src/middleware/errorHandler.ts`, `apps/backend/src/routes/shelf.ts`, `apps/backend/tests/phase4-observability.test.ts`, `apps/backend/tests/shelf.test.ts`, `apps/frontend/src/lib/api.test.ts`, `apps/frontend/src/lib/api.ts`, `apps/frontend/src/store/useLibraryStore.test.ts`, and `apps/frontend/src/store/useLibraryStore.ts`.
 - Delegated mapper confirmed main/PR intent on both sides. Conflict markers and unmerged index entries were cleared; source file tree is unchanged from the PR head. Full `npm run quality` passed with local PostgreSQL access: formatting, lint, both typechecks, 80 backend tests, 33 frontend tests, and both builds. `git diff --check` passed.
 - Native RDD reported medium / `under_budget` (333 authored lines from `5e864cd`); `review_due=false`, reason `under_budget`.
 
 ## Next Step
 
-Await required PR review/approval, then decide separately whether to merge; no merge was performed or authorized in this resolution step.
+Wait for the latest CI run to finish and review the result; then decide separately whether to merge. No merge was performed.
 
 ## Relevant Files
 
