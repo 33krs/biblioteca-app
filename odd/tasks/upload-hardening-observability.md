@@ -49,30 +49,37 @@ The current cover upload trusts the original filename extension, uses predictabl
   - Route: delegated direct.
   - Trigger evidence: API client, store/components, tests, and docs are non-trivial files.
   - Checks: strict TDD RED/GREEN/REFACTOR observed; focused API/store tests passed (6 tests); frontend tests passed (28 tests); `npm run quality` passed.
+- [x] P4-04 — Apply the approved native-review corrections for cover ownership and log assertions.
+  - Route: delegated direct.
+  - Trigger evidence: route, schema, and two backend test files are non-trivial files.
+  - Checks: focused backend tests passed (26 tests); `npm run quality` passed (78 backend and 28 frontend tests); native targeted validation approved.
 
 ## Progress and Evidence
 
 - Branch created from refreshed origin/main at 6aeb34e.
 - Local .atl/ and .codegraph/ are untracked artifacts and excluded.
 - Delegated Phase 4 architecture mapping completed: uploads are written before authorization, trust filename extensions, use predictable names, lack nosniff, and leave error correlation/retry gaps.
-- Product decision accepted: delete the prior custom cover file after a replacement succeeds, because it belongs to one UserBook and prevents orphan accumulation.
+- Product decision accepted: delete the prior server-owned custom cover file after a replacement succeeds, because it belongs to one UserBook and prevents orphan accumulation.
 - P4-01 implementation completed locally: signature validation, 5 MiB limit, UUID/server-controlled filenames, in-memory uploads, cleanup on rejection/authorization/database failure, replacement deletion after success, and `nosniff` serving headers.
-- Fixed a discovered schema mismatch: `customCoverUrl` now accepts server-relative `/uploads/<safe-filename>` URLs; previously Zod accepted only absolute URLs, so replacement cleanup silently had no prior URL to remove.
+- An initial schema adjustment accepted server-relative `/uploads/<safe-filename>` URLs to support replacement cleanup; native review later proved that client-controlled association unsafe, so P4-04 removed it and keeps the association server-owned.
 - TDD evidence: RED observed with the replacement-cleanup test failing; GREEN observed with 74 backend tests passing (12 files); REFACTOR completed by extracting the bounded custom-cover URL schema.
 - Verification: `npm run typecheck:backend` passed; `npm run build:backend` passed; `git diff --check` passed.
 - PostgreSQL test database was started in local Docker using ephemeral test credentials; no project secret files were changed.
 - Commit identity: `4d09fab` (`feat(uploads): harden cover file handling`).
-- Review assessment: native assessment classified the committed range as high risk but could not proceed because the negotiated read-only review status failed on the repository filesystem; review remains unavailable and no review authority was granted.
+- Initial review assessment was high risk. The review service required elevated local filesystem access to create its isolated Git index; the user explicitly approved that access and excluded `.atl/` and `.codegraph/` artifacts.
 - P4-02 implementation completed locally: UUID request IDs are propagated via `X-Request-ID`, safe structured error/info logs omit query strings and error bodies, and JSON errors include stable codes plus `requestId`.
 - TDD evidence: RED observed with 3 failing observability tests; GREEN observed with 3 focused tests and 77 backend tests passing; REFACTOR completed by centralizing request IDs and error responses.
 - A lint failure from unused caught upstream errors was corrected by using bindingless `catch` blocks; final `npm run lint` passed.
 - P4-02 work-unit commit identity: `16c7cac` (`feat(observability): correlate backend errors`).
-- P4-02 review assessment: native assessment remained high risk but unavailable because the review index could not be created on the repository's read-only filesystem; preflight status also failed safely, so no review authority was granted.
 - P4-03 implementation completed locally: API errors preserve backend `code` and `requestId`, library state retains a retry action, the library error banner exposes a retry control, and the detail panel keeps failed actions open with local retry feedback.
 - TDD evidence: RED observed with API request-ID parsing and recoverable store-error tests failing; GREEN observed with 6 focused tests and 28 frontend tests passing; REFACTOR completed by centralizing typed API errors and retry state.
 - Full quality initially found Prettier drift in prior P4 backend routes and the tracker; formatting was normalized and the final `npm run quality` passed.
 - P4-03 work-unit commit identity: `31c4c1f` (`feat(frontend): add retryable API errors`).
+- Native review found a blocker/critical path allowing a client-supplied `/uploads/...` URL to make replacement cleanup delete another item's file, plus a deterministic false-negative JSON-log assertion.
+- P4-04 removed client control of `customCoverUrl`; only the upload endpoint now creates that association. It also replaces the falsy `every()` assertion with individual JSON assertions and proves a second item cannot use the first item's cover URL.
+- P4-04 work-unit commit identity: `abe5b29` (`fix(uploads): prevent cross-item cover deletion`).
+- Native targeted validation approved the corrected candidate; its receipt was acknowledged. Seven non-blocking warnings were recorded as separate follow-ups, including stale frontend retry state, malformed error-payload guards, and post-commit cleanup diagnostics. They are not part of this approved review and require separate authorization.
 
 ## Next Step
 
-Review and commit P4-03 as one work unit, then complete the prepared native review with explicit user consent.
+No required work remains in Phase 4. Consider separately authorizing the native-review advisory follow-ups.
