@@ -32,7 +32,10 @@ export function detectCoverExtension(file: Buffer): string | null {
 
   if (startsWith(file, [0xff, 0xd8, 0xff])) return COVER_EXTENSION.JPEG;
 
-  if (startsWith(file, [0x52, 0x49, 0x46, 0x46]) && startsWith(file.subarray(8), [0x57, 0x45, 0x42, 0x50])) {
+  if (
+    startsWith(file, [0x52, 0x49, 0x46, 0x46]) &&
+    startsWith(file.subarray(8), [0x57, 0x45, 0x42, 0x50])
+  ) {
     return COVER_EXTENSION.WEBP;
   }
 
@@ -178,7 +181,9 @@ router.post(
     }
 
     if (!detectCoverExtension(req.file.buffer)) {
-      return res.status(400).json({ error: 'El archivo debe ser una imagen JPEG, PNG o WebP válida' });
+      return res
+        .status(400)
+        .json({ error: 'El archivo debe ser una imagen JPEG, PNG o WebP válida' });
     }
 
     const filename = createCoverFilename(req.file.buffer);

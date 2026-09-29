@@ -108,7 +108,10 @@ router.get(
     if (!q.trim()) return res.json([]);
 
     try {
-      logSafeEvent('info', 'book_search', { requestId: res.locals.requestId, provider: 'google_books' });
+      logSafeEvent('info', 'book_search', {
+        requestId: res.locals.requestId,
+        provider: 'google_books',
+      });
       const results = await searchGoogleBooks(q);
       logSafeEvent('info', 'book_search_complete', {
         requestId: res.locals.requestId,
@@ -121,7 +124,10 @@ router.get(
     }
 
     try {
-      logSafeEvent('info', 'book_search', { requestId: res.locals.requestId, provider: 'open_library' });
+      logSafeEvent('info', 'book_search', {
+        requestId: res.locals.requestId,
+        provider: 'open_library',
+      });
       const results = await searchOpenLibrary(q);
       logSafeEvent('info', 'book_search_complete', {
         requestId: res.locals.requestId,
