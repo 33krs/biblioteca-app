@@ -6,7 +6,7 @@ Bring PR #9 up to date with the current `main`, resolve any real merge conflicts
 
 ## Problem and Why
 
-GitHub reported PR #9 as `DIRTY`, while local `origin/main` was stale and a local merge preview did not confirm conflicts. Current remote base/head refs must be refreshed before determining the actual resolution.
+GitHub reported PR #9 as `DIRTY`, while local `origin/main` was stale and its first merge preview did not confirm conflicts. Refreshing the base exposed conflicts from the Phase 4 changes now present in `main` and their advisory follow-ups on the PR branch.
 
 ## Authorized Scope
 
@@ -21,17 +21,18 @@ GitHub reported PR #9 as `DIRTY`, while local `origin/main` was stale and a loca
 - Preserve the Phase 4 implementation and RA-01–RA-03 behavior/tests; make only conflict-resolution edits.
 - TDD is strict for behavior changes under prior explicit user authorization. If conflict resolution is mechanical integration only, run ordinary functional verification; runner: `npm run quality`.
 - Conventional Commit; no `Co-Authored-By` or AI attribution.
-- Delivery strategy: `single-pr` (the existing PR #9); forecast ~275 authored changed lines from the existing RA work, with conflict-resolution delta to be measured after merge. This is under the ~400-line delivery budget.
+- Delivery strategy: `single-pr` (the existing PR #9); initial forecast ~275 authored changed lines; native assessment observed 333 lines from `5e864cd`, under the ~400-line delivery budget.
 
 ## Tasks
 
-- [ ] PR9-01 — Refresh current refs, integrate latest `main` into the PR branch, and resolve only observed conflicts.
+- [x] PR9-01 — Refresh current refs, integrate latest `main` into the PR branch, and resolve only observed conflicts.
   - Route: delegated direct.
-  - Trigger evidence: actual three-way preview against refreshed refs reports conflicts in 8 non-trivial files; a delegated mapper is comparing both sides before the writer acts.
+  - Trigger evidence: actual three-way preview against refreshed refs reported conflicts in 8 non-trivial files; delegated mapper and writer resolved them.
   - Acceptance: the PR branch is based on current `main`, conflicts are resolved without dropping either side's intended behavior, and no force-push or PR merge occurs.
   - Checks: conflict index cleared (0 unmerged paths); `npm run quality` passed (format, lint, both typechecks, 80 backend tests, 33 frontend tests, both builds); `git diff --check` passed.
-  - Evidence: refreshed `origin/main` at `e866d4d`; resolved 7 files manually and 1 merged automatically. Resulting file contents match the PR head exactly, so the merge records ancestry without introducing additional file-content changes. Merge commit not yet created.
-  - Commit identity: pending.
+  - Evidence: refreshed `origin/main` at `e866d4d`; resolved 7 files manually and 1 merged automatically. Resulting file contents match the PR head exactly, so the merge records ancestry without introducing additional file-content changes. Existing documented strict-TDD RED evidence was reused; no new behavior was introduced.
+  - Native RDD assessment: medium, reason `executable_change`; outcome `under budget` (333 authored changed lines from `5e864cd`); no review was due.
+  - Commit identity: `cbe4c1d` (`chore(merge): sync advisory PR with main`).
 - [ ] PR9-02 — Push the verified resolution to the existing PR branch and confirm PR #9 is no longer dirty.
   - Route: direct delivery of PR9-01's verified work unit.
   - Acceptance: remote branch contains the resolution commit; PR remains open and is not merged; report latest status checks/reviews.
@@ -41,16 +42,17 @@ GitHub reported PR #9 as `DIRTY`, while local `origin/main` was stale and a loca
 
 ## Progress and Evidence
 
-- Local HEAD and `origin/fix/phase4-review-advisories`: `5421616d1516db4c00d7bcb9cb20e6274626cb32`.
-- Local `origin/main`: `6aeb34e1b08d85b601f4476d88aa7f7cae747572`; last local fetch was 2026-09-27, so it is stale.
+- PR branch now has merge commit `cbe4c1d` (`chore(merge): sync advisory PR with main`) with `origin/main` `e866d4d` as second parent; PR head remote is not yet updated.
+- Local `origin/main` before the authorized fetch: `6aeb34e1b08d85b601f4476d88aa7f7cae747572`; its last local fetch was 2026-09-27.
 - GitHub reported PR #9 `DIRTY`, open, no reviews, and no status checks in the latest query.
 - Authorized `git fetch origin main` refreshed `origin/main` to `e866d4d6da5d1692aae38efcf3ab6a26acd60e28`; PR head remains `5421616d1516db4c00d7bcb9cb20e6274626cb32`.
 - Three-way merge preview against refreshed refs identified conflicts in `apps/backend/src/middleware/errorHandler.ts`, `apps/backend/src/routes/shelf.ts`, `apps/backend/tests/phase4-observability.test.ts`, `apps/backend/tests/shelf.test.ts`, `apps/frontend/src/lib/api.test.ts`, `apps/frontend/src/lib/api.ts`, `apps/frontend/src/store/useLibraryStore.test.ts`, and `apps/frontend/src/store/useLibraryStore.ts`.
-- Delegated mapper confirmed main/PR intent on both sides. Conflict markers and unmerged index entries are cleared; source file tree is unchanged from the PR head. The merge is still in progress (`MERGE_HEAD=e866d4d`); only task tracking is a new untracked file at this point.
+- Delegated mapper confirmed main/PR intent on both sides. Conflict markers and unmerged index entries were cleared; source file tree is unchanged from the PR head. Full `npm run quality` passed with local PostgreSQL access: formatting, lint, both typechecks, 80 backend tests, 33 frontend tests, and both builds. `git diff --check` passed.
+- Native RDD reported medium / `under_budget` (333 authored lines from `5e864cd`); `review_due=false`, reason `under_budget`.
 
 ## Next Step
 
-Create a conventional merge commit, assess the work unit, then push the updated branch and confirm PR #9 remains open and unmerged.
+Push the verified branch update, then confirm PR #9 remains open and unmerged and record the resulting remote status.
 
 ## Relevant Files
 
