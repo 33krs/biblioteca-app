@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import express from 'express';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
+import { errorHandler } from '../src/middleware/errorHandler.js';
+import { requestId } from '../src/middleware/requestId.js';
 
 const REQUEST_ID = '11111111-1111-4111-8111-111111111111';
 
@@ -46,5 +49,36 @@ describe('Phase 4 request observability', () => {
     for (const entry of logs) {
       expect(() => JSON.parse(entry)).not.toThrow();
     }
+  });
+
+  it('logs a safe error classification without exposing unexpected error details', async () => {
+    const sensitiveMessage = 'password=hunter2 /srv/private/customer-data';
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const app = express();
+    app.use(requestId);
+    app.get('/unexpected', (_req, _res, next) => next(new TypeError(sensitiveMessage)));
+    app.use(errorHandler);
+
+    const res = await request(app).get('/unexpected');
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({
+      error: 'Error interno del servidor',
+      code: 'INTERNAL_ERROR',
+      requestId: res.headers['x-request-id'],
+    });
+    expect(res.body.error).not.toContain(sensitiveMessage);
+
+    expect(error).toHaveBeenCalledOnce();
+    const logEntry = String(error.mock.calls[0][0]);
+    expect(() => JSON.parse(logEntry)).not.toThrow();
+    expect(JSON.parse(logEntry)).toMatchObject({
+      event: 'request_error',
+      code: 'INTERNAL_ERROR',
+      errorType: 'TypeError',
+    });
+    expect(logEntry).not.toContain(sensitiveMessage);
+    expect(logEntry).not.toContain('hunter2');
+    expect(logEntry).not.toContain('/srv/private');
   });
 });

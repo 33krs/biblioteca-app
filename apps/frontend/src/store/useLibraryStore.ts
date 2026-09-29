@@ -51,7 +51,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set({ loading: true, error: null, retry: null });
     try {
       const books = await api.fetchShelf();
-      set({ books, loading: false });
+      set({ books, loading: false, error: null, retry: null });
     } catch (error) {
       set({ error: toRecoverableError(error), loading: false, retry: () => get().load() });
     }
@@ -60,7 +60,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   addBook: async (payload) => {
     try {
       const userBook = await api.addBook(payload);
-      set({ books: [...get().books, userBook] });
+      set({ books: [...get().books, userBook], error: null, retry: null });
     } catch (error) {
       set({ error: toRecoverableError(error), retry: () => get().addBook(payload) });
       throw error;
@@ -70,7 +70,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   updateBook: async (id, patch) => {
     try {
       const updated = await api.updateShelfItem(id, patch);
-      set({ books: get().books.map((b) => (b.id === id ? updated : b)) });
+      set({ books: get().books.map((b) => (b.id === id ? updated : b)), error: null, retry: null });
     } catch (error) {
       set({ error: toRecoverableError(error), retry: () => get().updateBook(id, patch) });
       throw error;
@@ -80,7 +80,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   deleteBook: async (id) => {
     try {
       await api.deleteShelfItem(id);
-      set({ books: get().books.filter((b) => b.id !== id) });
+      set({ books: get().books.filter((b) => b.id !== id), error: null, retry: null });
     } catch (error) {
       set({ error: toRecoverableError(error), retry: () => get().deleteBook(id) });
       throw error;
@@ -90,7 +90,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   uploadCover: async (id, file) => {
     try {
       const updated = await api.uploadCover(id, file);
-      set({ books: get().books.map((b) => (b.id === id ? updated : b)) });
+      set({ books: get().books.map((b) => (b.id === id ? updated : b)), error: null, retry: null });
     } catch (error) {
       set({ error: toRecoverableError(error), retry: () => get().uploadCover(id, file) });
       throw error;

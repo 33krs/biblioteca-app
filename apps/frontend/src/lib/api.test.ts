@@ -24,4 +24,27 @@ describe('fetchShelf', () => {
       requestId: 'req-123',
     });
   });
+
+  it.each([
+    ['array', []],
+    ['primitive', 'not-an-object'],
+    ['malformed fields', { error: { message: 'bad' }, code: 42, requestId: false }],
+  ])('falls back safely for %s error payloads', async (_description, body) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify(body), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'X-Request-ID': 'header-req' },
+        }),
+      ),
+    );
+
+    await expect(fetchShelf()).rejects.toMatchObject({
+      name: 'ApiError',
+      message: 'No se pudo cargar la estantería',
+      code: null,
+      requestId: 'header-req',
+    });
+  });
 });

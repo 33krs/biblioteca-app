@@ -19,6 +19,13 @@ function makeUserBook(overrides: Partial<UserBook> = {}): UserBook {
   };
 }
 
+function seedRecoveryState() {
+  useLibraryStore.setState({
+    error: { message: 'Previous failure', code: 'FAILED', requestId: 'req-old' },
+    retry: vi.fn().mockResolvedValue(undefined),
+  });
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   useLibraryStore.setState({
@@ -32,7 +39,27 @@ beforeEach(() => {
 });
 
 describe('load', () => {
+  it('clears stale recovery controls while a fresh load is pending', async () => {
+    seedRecoveryState();
+    let resolveFetch!: (books: UserBook[]) => void;
+    vi.mocked(api.fetchShelf).mockReturnValue(
+      new Promise((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+
+    const loading = useLibraryStore.getState().load();
+
+    expect(useLibraryStore.getState().loading).toBe(true);
+    expect(useLibraryStore.getState().error).toBeNull();
+    expect(useLibraryStore.getState().retry).toBeNull();
+
+    resolveFetch([makeUserBook()]);
+    await loading;
+  });
+
   it('carga los libros y limpia el error', async () => {
+    seedRecoveryState();
     vi.mocked(api.fetchShelf).mockResolvedValue([makeUserBook()]);
 
     await useLibraryStore.getState().load();
@@ -40,6 +67,7 @@ describe('load', () => {
     expect(useLibraryStore.getState().books).toHaveLength(1);
     expect(useLibraryStore.getState().loading).toBe(false);
     expect(useLibraryStore.getState().error).toBeNull();
+    expect(useLibraryStore.getState().retry).toBeNull();
   });
 
   it('guarda el mensaje de error si falla', async () => {
@@ -59,17 +87,21 @@ describe('load', () => {
 
 describe('addBook', () => {
   it('agrega el libro devuelto por la API al estado', async () => {
+    seedRecoveryState();
     const created = makeUserBook();
     vi.mocked(api.addBook).mockResolvedValue(created);
 
     await useLibraryStore.getState().addBook({ title: 'Dune', author: 'Frank Herbert' });
 
     expect(useLibraryStore.getState().books).toEqual([created]);
+    expect(useLibraryStore.getState().error).toBeNull();
+    expect(useLibraryStore.getState().retry).toBeNull();
   });
 });
 
 describe('updateBook', () => {
   it('reemplaza solo el libro actualizado', async () => {
+    seedRecoveryState();
     const original = makeUserBook({ id: 'ub1', status: 'TO_READ' });
     const other = makeUserBook({ id: 'ub2', status: 'READING' });
     const updated = makeUserBook({ id: 'ub1', status: 'READ' });
@@ -79,11 +111,14 @@ describe('updateBook', () => {
     await useLibraryStore.getState().updateBook('ub1', { status: 'READ' });
 
     expect(useLibraryStore.getState().books).toEqual([updated, other]);
+    expect(useLibraryStore.getState().error).toBeNull();
+    expect(useLibraryStore.getState().retry).toBeNull();
   });
 });
 
 describe('deleteBook', () => {
   it('quita el libro del estado', async () => {
+    seedRecoveryState();
     const toDelete = makeUserBook({ id: 'ub1' });
     const other = makeUserBook({ id: 'ub2' });
     useLibraryStore.setState({ books: [toDelete, other] });
@@ -92,5 +127,23 @@ describe('deleteBook', () => {
     await useLibraryStore.getState().deleteBook('ub1');
 
     expect(useLibraryStore.getState().books).toEqual([other]);
+    expect(useLibraryStore.getState().error).toBeNull();
+    expect(useLibraryStore.getState().retry).toBeNull();
+  });
+});
+
+describe('uploadCover', () => {
+  it('clears stale recovery state after uploading a cover', async () => {
+    const original = makeUserBook({ id: 'ub1' });
+    const updated = makeUserBook({ id: 'ub1', customCoverUrl: '/covers/new.png' });
+    useLibraryStore.setState({ books: [original] });
+    seedRecoveryState();
+    vi.mocked(api.uploadCover).mockResolvedValue(updated);
+
+    await useLibraryStore.getState().uploadCover('ub1', new File(['cover'], 'cover.png'));
+
+    expect(useLibraryStore.getState().books).toEqual([updated]);
+    expect(useLibraryStore.getState().error).toBeNull();
+    expect(useLibraryStore.getState().retry).toBeNull();
   });
 });
