@@ -4,12 +4,6 @@ import { useAuthStore } from '../store/useAuthStore';
 
 const BASE = '/api/shelf';
 
-interface ErrorPayload {
-  error?: string;
-  code?: string;
-  requestId?: string;
-}
-
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -21,8 +15,12 @@ export class ApiError extends Error {
   }
 }
 
-function isErrorPayload(value: unknown): value is ErrorPayload {
-  return typeof value === 'object' && value !== null;
+function isErrorPayload(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function nonEmptyString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
 }
 
 async function apiError(response: Response, fallback: string): Promise<ApiError> {
@@ -30,9 +28,9 @@ async function apiError(response: Response, fallback: string): Promise<ApiError>
   const payload = isErrorPayload(body) ? body : {};
 
   return new ApiError(
-    payload.error || fallback,
-    payload.code || null,
-    payload.requestId || response.headers.get('X-Request-ID'),
+    nonEmptyString(payload.error) ?? fallback,
+    nonEmptyString(payload.code),
+    nonEmptyString(payload.requestId) ?? nonEmptyString(response.headers.get('X-Request-ID')),
   );
 }
 

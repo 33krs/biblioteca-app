@@ -1,9 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { readdir, rm } from 'node:fs/promises';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { readdir, rm, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return { ...actual, unlink: vi.fn(actual.unlink) };
+});
 
 const app = createApp();
 const uploadsDirectory = fileURLToPath(new URL('../uploads', import.meta.url));
@@ -341,6 +346,30 @@ describe('POST /api/shelf/:id/cover', () => {
 
     expect(res.status).toBe(200);
     expect(await uploadedFiles()).toEqual([res.body.customCoverUrl.replace('/uploads/', '')]);
+  });
+
+  it('returns the committed replacement when deleting the previous cover fails', async () => {
+    const item = await createShelfItem();
+    const firstUpload = await uploadCover(item.id, PNG_SIGNATURE, 'first-cover.png');
+    expect(firstUpload.status).toBe(200);
+    const previousCoverUrl = firstUpload.body.customCoverUrl;
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(unlink).mockRejectedValueOnce(
+      Object.assign(new Error('sensitive filesystem path'), { code: 'EACCES' }),
+    );
+
+    const replacement = await uploadCover(item.id, JPEG_SIGNATURE, 'replacement-cover.jpg');
+    const shelf = await auth(request(app).get('/api/shelf'));
+    const committedItem = shelf.body.find((entry: { id: string }) => entry.id === item.id);
+
+    expect(replacement.status).toBe(200);
+    expect(replacement.body.customCoverUrl).not.toBe(previousCoverUrl);
+    expect(committedItem.customCoverUrl).toBe(replacement.body.customCoverUrl);
+    expect(errorLog).toHaveBeenCalledWith(
+      expect.stringContaining('"event":"cover_cleanup_failed"'),
+    );
+    expect(errorLog.mock.calls.flat().join(' ')).not.toContain('sensitive filesystem path');
+    errorLog.mockRestore();
   });
 
   it('rejects client-supplied upload URLs and preserves another shelf item cover', async () => {
